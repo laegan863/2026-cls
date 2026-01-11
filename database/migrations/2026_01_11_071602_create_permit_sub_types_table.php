@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('permit_types', function (Blueprint $table) {
+        Schema::create('permit_sub_types', function (Blueprint $table) {
             $table->id();
-            $table->string('permit_type');
+            $table->string('name');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('permit_types');
+        Schema::dropIfExists('permit_sub_types');
     }
 };

@@ -3,9 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LicensingController;
+use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PermitTypeController;
+use App\Http\Controllers\PermitSubTypeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ModuleController;
 
@@ -28,9 +30,10 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
     });
 
     Route::view('dashboard', 'files.dashboard')->name('admin.dashboard');
-    Route::view('licensing', 'files.licensing')->name('admin.licensing');
-    Route::view('add-new-license-user', 'files.add-new-license-user')->name('admin.add-new-license-user');
     Route::view('settings', 'files.settings')->name('admin.settings');
+
+    // Licenses CRUD
+    Route::resource('licenses', LicenseController::class)->names('licenses');
 
     // Roles CRUD
     Route::resource('roles', RoleController::class)->names('admin.roles');
@@ -40,8 +43,8 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
 
     // Permit Types CRUD
     Route::resource('permit-types', PermitTypeController::class)->names('admin.permit-types');
-    Route::post('permit-types/{permitType}/add-sub-type', [PermitTypeController::class, 'addSubType'])->name('admin.permit-types.add-sub-type');
-    Route::delete('permit-types/{permitType}/remove-sub-type', [PermitTypeController::class, 'removeSubType'])->name('admin.permit-types.remove-sub-type');
+    // Permit Sub Types CRUD
+    Route::resource('permit-sub-types', PermitSubTypeController::class)->names('admin.permit-sub-types');
 
     // User Management CRUD
     Route::resource('users', UserController::class)->names('admin.users');

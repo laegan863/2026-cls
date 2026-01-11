@@ -3,7 +3,7 @@
 @section('title', 'Permit Types Management')
 
 @section('content')
-    <x-page-header title="Permit Types Management" subtitle="Manage permit types and their sub-types.">
+    <x-page-header title="Permit Types Management" subtitle="Manage permit types for the system.">
         <x-button href="{{ route('admin.permit-types.create') }}" variant="gold" icon="bi bi-plus-lg">Add New Permit Type</x-button>
     </x-page-header>
 
@@ -23,7 +23,6 @@
                         <tr>
                             <th>#</th>
                             <th>Permit Type</th>
-                            <th>Sub Types</th>
                             <th>Status</th>
                             <th>Created At</th>
                             <th>Actions</th>
@@ -35,17 +34,6 @@
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 <strong>{{ $permitType->permit_type }}</strong>
-                            </td>
-                            <td>
-                                @if($permitType->sub_type && count($permitType->sub_type) > 0)
-                                    <div class="d-flex flex-wrap gap-1">
-                                        @foreach($permitType->sub_type as $subType)
-                                            <x-badge variant="secondary">{{ $subType }}</x-badge>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <span class="text-muted">No sub-types</span>
-                                @endif
                             </td>
                             <td>
                                 @if($permitType->is_active)
@@ -75,7 +63,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-4">
+                            <td colspan="5" class="text-center py-4">
                                 <x-empty-state 
                                     icon="bi bi-file-earmark-text" 
                                     title="No permit types found" 
