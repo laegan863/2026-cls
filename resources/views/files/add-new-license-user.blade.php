@@ -11,7 +11,7 @@
         $role = Auth::user()->Role->name;
     @endphp
 
-    <form action="{{ route('licenses.store') }}" method="POST">
+    <form action="{{ route('admin.licenses.store') }}" method="POST">
         @csrf
         
     <div class="my-2">
@@ -23,7 +23,7 @@
                             {{-- Admin sees dropdown to select client --}}
                             <div class="col-lg-6 mb-3">
                                 <label for="client_id" class="form-label">Client Name</label>
-                                <x-select name="client_id" placeholder="Select Client Name">
+                                <x-select name="client_id" placeholder="Select Client Name" required>
                                     @php
                                         $users = \App\Models\User::where('is_active', 1)
                                         ->whereHas('Role', function ($query) {
@@ -38,21 +38,20 @@
                                 </x-select>
                             </div>
                         @else
-                            {{-- Client sees their own name (read-only) --}}
                             <div class="col-lg-6 mb-3">
                                 <label for="client_name" class="form-label">Client Name</label>
-                                <x-input name="client_name" type="text" value="{{ Auth::user()->name }}" readonly />
+                                <x-input name="client_name" type="text" value="{{ Auth::user()->name }}" required/>
                                 <input type="hidden" name="client_id" value="{{ Auth::id() }}">
                             </div>
                         @endif
                         
                         <div class="col-lg-6 mb-3">
                             <label for="email" class="form-label">Billing email(s)</label>
-                            <x-input name="email" type="email" placeholder="Enter billing email(s)" />
+                            <x-input name="email" type="email" placeholder="Enter billing email(s)" required/>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="primary_contact_info" class="form-label">Primary contact info</label>
-                            <x-input name="primary_contact_info" type="text" placeholder="Enter primary contact info" />
+                            <x-input name="primary_contact_info" type="text" placeholder="Enter primary contact info" required/>
                         </div>
                     </div>
                 </div>
@@ -82,7 +81,7 @@
                         @foreach ($client as $field)
                             <div class="col-lg-6 mb-3">
                                 <label for="{{ $field['name'] }}" class="form-label">{{ $field['label'] }}</label>
-                                <x-input name="{{ $field['name'] }}" type="text"
+                                <x-input name="{{ $field['name'] }}" type="text" required
                                     placeholder="Enter {{ strtolower($field['label']) }}" />
                             </div>
                         @endforeach
@@ -97,25 +96,34 @@
                 <div class="row">
                     <div class="col-lg-6 mb-3">
                         <label for="country" class="form-label">Country</label>
-                        <select name="country" id="country" class="form-select">
+                        <x-select name="country" id="country" class="form-select" required>
                             <option value="">Select Country</option>
-                        </select>
+                        </x-select>
+                        {{-- <select name="country" id="country" class="form-select" required>
+                            <option value="">Select Country</option>
+                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="state" class="form-label">State</label>
-                        <select name="state" id="state" class="form-select" disabled>
+                        <x-select name="state" id="state" class="form-select" required disabled>
                             <option value="">Select State</option>
-                        </select>
+                        </x-select>
+                        {{-- <select name="state" id="state" class="form-select" required disabled>
+                            <option value="">Select State</option>
+                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="city" class="form-label">City</label>
-                        <select name="city" id="city" class="form-select" disabled>
+                        <x-select name="city" id="city" class="form-select" required disabled>
                             <option value="">Select City</option>
-                        </select>
+                        </x-select>
+                        {{-- <select name="city" id="city" class="form-select" required disabled>
+                            <option value="">Select City</option>
+                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="zip_code" class="form-label">Zip Code</label>
-                        <x-input name="zip_code" type="text" placeholder="Enter zip code" />
+                        <x-input name="zip_code" type="text" placeholder="Enter zip code" required/>
                     </div>
                 </div>
             </div>
@@ -127,11 +135,11 @@
             <div class="form-group">
                 <div class="row">
                     <div class="col-lg-6 mb-3">
-                        <label for="permit_type" class="form-label">Permit Type/Sub Type</label>
+                        <label for="permit_type" class="form-label">Permit Type</label>
                         @php
                             $permit_types = \App\Models\PermitType::where('is_active', 1)->get();
                         @endphp
-                        <x-select name="permit_type" placeholder="Select Permit Type">
+                        <x-select name="permit_type" placeholder="Select Permit Type" required>
                             @forelse ($permit_types as $type)
                                 <option value="{{ $type->permit_type }}">{{ $type->permit_type }}</option>
                             @empty
@@ -141,48 +149,61 @@
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="permit_subtype" class="form-label">Permit Subtype</label>
+                        @php
+                            $subtype = \App\Models\PermitSubType::where('is_active', true)->get();
+                        @endphp
                         <x-select name="permit_subtype" placeholder="Select Permit Subtype">
-                            <option value="new">New</option>
-                            <option value="renewal">Renewal</option>
-                            <option value="amendment">Amendment</option>
-                            <option value="transfer">Transfer</option>
+                            @forelse ($subtype as $stype)
+                                <option value="{{ $stype->name }}">{{ $stype->name }}</option>  
+                            @empty
+                                <option value="" disabled>No Permit Subtype Available</option>
+                            @endforelse
                         </x-select>
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="jurisdiction_country" class="form-label">Jurisdiction Country</label>
-                        <select name="jurisdiction_country" class="form-select" id="jurisdiction_country">
+                        <x-select name="jurisdiction_country" class="form-select" id="jurisdiction_country" required>
                             <option value="">Select Country</option>
-                        </select>
+                        </x-select>
+                        {{-- <select name="jurisdiction_country" class="form-select" id="jurisdiction_country" required>
+                            <option value="">Select Country</option>
+                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="jurisdiction_state" class="form-label">Jurisdiction State</label>
-                        <select name="jurisdiction_state" class="form-select" id="jurisdiction_state" disabled>
+                        <x-select name="jurisdiction_state" class="form-select" id="jurisdiction_state" required disabled>
                             <option value="">Select State</option>
-                        </select>
+                        </x-select>
+                        {{-- <select name="jurisdiction_state" class="form-select" id="jurisdiction_state" required disabled>
+                            <option value="">Select State</option>
+                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="jurisdiction_city" class="form-label">Jurisdiction City</label>
-                        <select name="jurisdiction_city" class="form-select" id="jurisdiction_city" disabled>
+                        <x-select name="jurisdiction_city" class="form-select" id="jurisdiction_city" required disabled>
                             <option value="">Select City</option>
-                        </select>
+                        </x-select>
+                        {{-- <select name="jurisdiction_city" class="form-select" id="jurisdiction_city" required disabled>
+                            <option value="">Select City</option>
+                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="jurisdiction_federal" class="form-label">Federal</label>
-                        <x-input name="jurisdiction_federal" type="text" placeholder="Enter federal jurisdiction" />
+                        <x-input name="jurisdiction_federal" type="text" placeholder="Enter federal jurisdiction" required/>
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="agency_name" class="form-label">Agency Name</label>
-                        <x-input name="agency_name" type="text" placeholder="Enter agency name" />
+                        <x-input name="agency_name" type="text" placeholder="Enter agency name" required/>
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="expiration_date" class="form-label">Expiration Date</label>
-                        <x-input name="expiration_date" type="date" placeholder="Select expiration date" />
+                        <x-input name="expiration_date" type="date" placeholder="Select expiration date" required/>
                     </div>
-                    <div class="col-lg-6 mb-3">
+                    {{-- <div class="col-lg-6 mb-3">
                         <label for="renewal_window_open_date" class="form-label">Renewal Window Open Date</label>
                         <x-input name="renewal_window_open_date" type="date" placeholder="Select renewal window open date" />
-                    </div>
-                    <div class="col-lg-6 mb-3">
+                    </div> --}}
+                    {{-- <div class="col-lg-6 mb-3">
                         <label for="assigned_agent" class="form-label">Assigned Agent</label>
                         <x-select name="assigned_agent" placeholder="Select Assigned Agent">
                             <option value="agent_1">Agent 1</option>
@@ -217,10 +238,10 @@
                             <option value="override_approved">Override Approved</option>
                             <option value="voided">Voided</option>
                         </x-select>
-                    </div>
+                    </div> --}}
                     <div class="col-lg-6 mb-3">
                         <label class="form-label" for="submission_confirmation_number">Submission Confirmation Number</label>
-                        <x-input type="text" name="submission_confirmation_number" placeholder="Enter Submission Confirmation Number" />
+                        <x-input type="text" name="submission_confirmation_number" placeholder="Enter Submission Confirmation Number" required />
                     </div>
                 </div>
                 
@@ -228,8 +249,22 @@
         </x-card>
     </div>
 
+    <div class="my-2">
+        <x-card title="Additional Information" icon="bi bi-file-earmark-text-fill">
+            <div class="form-group">
+                <div class="col-3 mb-3">
+                    <x-button type="button" variant="primary" onclick="addField()" icon="bi bi-plus-lg">Add Another Field</x-button>
+                </div>
+                
+                <!-- Dynamic Fields Container -->
+                <div id="dynamic-fields-container">
+                </div>
+            </div>
+        </x-card>
+    </div>
+
     <div class="my-3 d-flex justify-content-end gap-2">
-        <x-button href="{{ route('licenses.index') }}" variant="secondary">Cancel</x-button>
+        <x-button href="{{ route('admin.licenses.index') }}" variant="secondary">Cancel</x-button>
         <x-button type="submit" variant="gold" icon="bi bi-save">Save License</x-button>
     </div>
 
@@ -363,5 +398,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Dynamic Additional Fields
+let fieldCounter = 0;
+
+function addField() {
+    fieldCounter++;
+    const container = document.getElementById('dynamic-fields-container');
+    
+    const fieldRow = document.createElement('div');
+    fieldRow.className = 'row mb-3 dynamic-field-row';
+    fieldRow.id = `dynamic-field-${fieldCounter}`;
+    
+    fieldRow.innerHTML = `
+        <div class="col-lg-4">
+            <label class="form-label">Field Label</label>
+            <x-input name="custom_fields[${fieldCounter}][label]" type="textarea" placeholder="Enter field label" />
+        </div>
+        <div class="col-lg-6">
+            <label class="form-label">Field Value</label>
+            <x-input name="custom_fields[${fieldCounter}][value]" type="textarea" placeholder="Enter field value" />
+        </div>
+        <div class="col-lg-2 d-flex align-items-end">
+            <x-button type="button" variant="danger" onclick="removeField(${fieldCounter})" icon="bi bi-trash">Remove</x-button>
+
+        </div>
+    `;
+    
+    container.appendChild(fieldRow);
+}
+
+function removeField(id) {
+    const field = document.getElementById(`dynamic-field-${id}`);
+    if (field) {
+        field.remove();
+    }
+}
 </script>
 @endpush

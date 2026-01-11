@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class License extends Model
 {
     protected $fillable = [
+        'transaction_id',
         'client_id',
         'email',
         'primary_contact_info',

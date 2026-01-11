@@ -25,32 +25,15 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->
 
 // Protected Admin Routes (authenticated users only)
 Route::prefix('admin')->middleware('auth.user')->group(function() {
-    Route::controller(LicensingController::class)->group(function () {
-        
-    });
-
     Route::view('dashboard', 'files.dashboard')->name('admin.dashboard');
     Route::view('settings', 'files.settings')->name('admin.settings');
-
-    // Licenses CRUD
-    Route::resource('licenses', LicenseController::class)->names('licenses');
-
-    // Roles CRUD
+    Route::resource('licenses', LicenseController::class)->names('admin.licenses');
     Route::resource('roles', RoleController::class)->names('admin.roles');
-
-    // Permissions CRUD
     Route::resource('permissions', PermissionController::class)->names('admin.permissions');
-
-    // Permit Types CRUD
     Route::resource('permit-types', PermitTypeController::class)->names('admin.permit-types');
-    // Permit Sub Types CRUD
     Route::resource('permit-sub-types', PermitSubTypeController::class)->names('admin.permit-sub-types');
-
-    // User Management CRUD
     Route::resource('users', UserController::class)->names('admin.users');
     Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
-
-    // Modules CRUD
     Route::resource('modules', ModuleController::class)->names('admin.modules');
     Route::post('modules/reorder', [ModuleController::class, 'reorder'])->name('admin.modules.reorder');
 });

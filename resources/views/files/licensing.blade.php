@@ -8,7 +8,7 @@
     @endphp
 
     <x-page-header title="Licensing & Permitting" subtitle="Welcome back, {{ Auth::user()->name }}! Here's what's happening today.">
-        <x-button href="{{ route('licenses.create') }}" variant="gold" icon="bi bi-plus-lg">Add New</x-button>
+        <x-button href="{{ route('admin.licenses.create') }}" variant="gold" icon="bi bi-plus-lg">Add New</x-button>
     </x-page-header>
 
     @if(session('success'))
@@ -69,7 +69,7 @@
                                     <x-dropdown-item href="{{ route('licenses.show', $license) }}" icon="fas fa-eye">View</x-dropdown-item>
                                     <x-dropdown-item href="{{ route('licenses.edit', $license) }}" icon="fas fa-edit">Edit</x-dropdown-item>
                                     <x-dropdown-divider />
-                                    <form action="{{ route('licenses.destroy', $license) }}" method="POST" style="display: inline;">
+                                    <form action="{{ route('admin.licenses.destroy', $license) }}" method="POST" style="display: inline;">
                                         @csrf
                                         @method('DELETE')
                                         <x-dropdown-item type="submit" icon="fas fa-trash" class="text-danger" onclick="return confirm('Are you sure you want to delete this license?')">Delete</x-dropdown-item>
@@ -82,7 +82,7 @@
                             <td colspan="7" class="text-center py-4">
                                 <div class="text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    No licenses found. <a href="{{ route('licenses.create') }}">Add your first license</a>
+                                    No licenses found. <a href="{{ route('admin.licenses.create') }}">Add your first license</a>
                                 </div>
                             </td>
                         </tr>

@@ -84,7 +84,6 @@
                     </div>
                 </div>
             @else
-                {{-- Single module item --}}
                 @php
                     // Handle resource routes - check for .index suffix
                     $routeName = $module->route;

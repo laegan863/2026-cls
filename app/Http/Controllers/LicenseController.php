@@ -6,6 +6,7 @@ use App\Models\License;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class LicenseController extends Controller
 {
@@ -70,15 +71,12 @@ class LicenseController extends Controller
             'submission_confirmation_number' => 'nullable|string',
         ]);
 
-        // Handle client_id based on role
         if ($role === 'Admin') {
             $validated['client_id'] = $request->input('client_id');
         } else {
-            // Client creates their own license
             $validated['client_id'] = Auth::id();
         }
 
-        // Handle assigned agent - find user by value or set null
         if ($request->filled('assigned_agent')) {
             $agent = User::whereHas('Role', function ($query) {
                 $query->where('name', 'Agent');
@@ -88,20 +86,16 @@ class LicenseController extends Controller
         }
         
         unset($validated['assigned_agent']);
-
+        $validated['transaction_id'] = Str::random(12);
         License::create($validated);
 
-        return redirect()->route('licenses.index')->with('success', 'License created successfully!');
+        return redirect()->route('admin.licenses.index')->with('success', 'License created successfully!');
     }
 
-    /**
-     * Display the specified license.
-     */
     public function show(License $license)
     {
         $role = Auth::user()->Role->name;
         
-        // Client can only view their own licenses
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
         }
@@ -109,14 +103,10 @@ class LicenseController extends Controller
         return view('files.license-show', compact('license'));
     }
 
-    /**
-     * Show the form for editing the specified license.
-     */
     public function edit(License $license)
     {
         $role = Auth::user()->Role->name;
         
-        // Client can only edit their own licenses
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
         }
@@ -124,14 +114,10 @@ class LicenseController extends Controller
         return view('files.license-edit', compact('license'));
     }
 
-    /**
-     * Update the specified license in storage.
-     */
     public function update(Request $request, License $license)
     {
         $role = Auth::user()->Role->name;
         
-        // Client can only update their own licenses
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
         }
@@ -162,24 +148,19 @@ class LicenseController extends Controller
         ]);
 
         $license->update($validated);
-
-        return redirect()->route('licenses.index')->with('success', 'License updated successfully!');
+        return redirect()->route('admin.licenses.index')->with('success', 'License updated successfully!');
     }
 
-    /**
-     * Remove the specified license from storage.
-     */
     public function destroy(License $license)
     {
         $role = Auth::user()->Role->name;
         
-        // Client can only delete their own licenses
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
         }
         
         $license->delete();
 
-        return redirect()->route('licenses.index')->with('success', 'License deleted successfully!');
+        return redirect()->route('admin.licenses.index')->with('success', 'License deleted successfully!');
     }
 }
