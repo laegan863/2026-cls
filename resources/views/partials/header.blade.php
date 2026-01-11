@@ -201,10 +201,13 @@
                     <hr class="dropdown-divider">
                 </li>
                 <li>
-                    <a class="dropdown-item py-2 text-danger" href="#">
-                        <i class="fas fa-sign-out-alt me-2"></i> 
-                        Logout
-                    </a>
+                    <form action="{{ route('auth.logout') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="dropdown-item py-2 text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i> 
+                            Logout
+                        </button>
+                    </form>
                 </li>
             </ul>
         </div>

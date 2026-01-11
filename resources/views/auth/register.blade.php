@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Register - Blueside</title>
+    <title>Register - CLS | Licensing & Renewal Management System</title>
 
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -487,40 +487,40 @@
                 <div class="brand-logo-icon">
                     <i class="bi bi-lightning-charge-fill"></i>
                 </div>
-                <span class="brand-logo-text">Blue<span>side</span></span>
+                <span class="brand-logo-text">CL<span>S</span></span>
             </div>
 
-            <h1 class="brand-tagline">Join Our Platform Today</h1>
+            <h1 class="brand-tagline">Licensing & Renewal Management System</h1>
             <p class="brand-description">
-                Create your account and get access to powerful tools designed to help you manage your work efficiently.
+                Create your account to manage permits, track renewals, and stay compliant with all licensing requirements.
             </p>
 
             <div class="brand-features">
                 <div class="brand-feature">
                     <div class="brand-feature-icon">
-                        <i class="bi bi-shield-check"></i>
+                        <i class="bi bi-file-earmark-check"></i>
                     </div>
                     <div class="brand-feature-text">
-                        <strong>Secure Registration</strong>
-                        Your data is protected with encryption
+                        <strong>License Management</strong>
+                        Track permits, renewals, and expirations
                     </div>
                 </div>
                 <div class="brand-feature">
                     <div class="brand-feature-icon">
-                        <i class="bi bi-lightning-charge"></i>
+                        <i class="bi bi-bell"></i>
                     </div>
                     <div class="brand-feature-text">
-                        <strong>Quick Setup</strong>
-                        Get started in under 2 minutes
+                        <strong>Automated Reminders</strong>
+                        Never miss a renewal deadline again
                     </div>
                 </div>
                 <div class="brand-feature">
                     <div class="brand-feature-icon">
-                        <i class="bi bi-headset"></i>
+                        <i class="bi bi-clipboard-data"></i>
                     </div>
                     <div class="brand-feature-text">
-                        <strong>24/7 Support</strong>
-                        Our team is always here to help
+                        <strong>Compliance Tracking</strong>
+                        Stay compliant with all jurisdictions
                     </div>
                 </div>
             </div>
@@ -534,12 +534,12 @@
             <div class="logo-icon">
                 <i class="bi bi-lightning-charge-fill"></i>
             </div>
-            <span class="logo-text">Blue<span>side</span></span>
+            <span class="logo-text">CL<span>S</span></span>
         </div>
 
         <div class="register-header">
             <h2 class="register-title">Create Account</h2>
-            <p class="register-subtitle">Fill in your details to get started</p>
+            <p class="register-subtitle">Register to start managing your licenses and permits</p>
         </div>
 
         <form action="{{ route('auth.register.post') }}" method="POST">

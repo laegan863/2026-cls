@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - Blueside</title>
+    <title>Login - CLS | Licensing & Renewal Management System</title>
 
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -519,40 +519,40 @@
                 <div class="brand-logo-icon">
                     <i class="bi bi-lightning-charge-fill"></i>
                 </div>
-                <span class="brand-logo-text">Blue<span>side</span></span>
+                <span class="brand-logo-text">CL<span>S</span></span>
             </div>
 
-            <h1 class="brand-tagline">Powerful Admin Dashboard for Modern Teams</h1>
+            <h1 class="brand-tagline">Licensing & Renewal Management System</h1>
             <p class="brand-description">
-                Streamline your workflow, manage your team efficiently, and make data-driven decisions with our comprehensive admin solution.
+                Streamline your permit applications, track license renewals, and manage compliance effortlessly with our comprehensive licensing solution.
             </p>
 
             <div class="brand-features">
                 <div class="brand-feature">
                     <div class="brand-feature-icon">
-                        <i class="bi bi-shield-check"></i>
+                        <i class="bi bi-file-earmark-check"></i>
                     </div>
                     <div class="brand-feature-text">
-                        <strong>Enterprise Security</strong>
-                        Advanced encryption and role-based access
+                        <strong>License Management</strong>
+                        Track permits, renewals, and expirations
                     </div>
                 </div>
                 <div class="brand-feature">
                     <div class="brand-feature-icon">
-                        <i class="bi bi-graph-up-arrow"></i>
+                        <i class="bi bi-bell"></i>
                     </div>
                     <div class="brand-feature-text">
-                        <strong>Real-time Analytics</strong>
-                        Live dashboards and instant insights
+                        <strong>Automated Reminders</strong>
+                        Never miss a renewal deadline again
                     </div>
                 </div>
                 <div class="brand-feature">
                     <div class="brand-feature-icon">
-                        <i class="bi bi-people"></i>
+                        <i class="bi bi-clipboard-data"></i>
                     </div>
                     <div class="brand-feature-text">
-                        <strong>Team Collaboration</strong>
-                        Built-in tools for seamless teamwork
+                        <strong>Compliance Tracking</strong>
+                        Stay compliant with all jurisdictions
                     </div>
                 </div>
             </div>
@@ -571,7 +571,7 @@
 
         <div class="login-header">
             <h2 class="login-title">Welcome back!</h2>
-            <p class="login-subtitle">Enter your credentials to access your account</p>
+            <p class="login-subtitle">Sign in to manage your licenses and permits</p>
         </div>
 
         <form action="{{ route('auth.login.post') }}" method="POST">
