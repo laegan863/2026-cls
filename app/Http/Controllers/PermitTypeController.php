@@ -31,17 +31,11 @@ class PermitTypeController extends Controller
     {
         $validated = $request->validate([
             'permit_type' => 'required|string|max:255',
-            'sub_type' => 'nullable|array',
-            'sub_type.*' => 'string|max:255',
             'is_active' => 'boolean',
         ]);
 
-        // Filter out empty sub_type values
-        $subTypes = array_filter($validated['sub_type'] ?? [], fn($value) => !empty(trim($value)));
-
         PermitType::create([
             'permit_type' => $validated['permit_type'],
-            'sub_type' => !empty($subTypes) ? array_values($subTypes) : null,
             'is_active' => $request->has('is_active'),
         ]);
 
@@ -72,17 +66,11 @@ class PermitTypeController extends Controller
     {
         $validated = $request->validate([
             'permit_type' => 'required|string|max:255',
-            'sub_type' => 'nullable|array',
-            'sub_type.*' => 'string|max:255',
             'is_active' => 'boolean',
         ]);
 
-        // Filter out empty sub_type values
-        $subTypes = array_filter($validated['sub_type'] ?? [], fn($value) => !empty(trim($value)));
-
         $permitType->update([
             'permit_type' => $validated['permit_type'],
-            'sub_type' => !empty($subTypes) ? array_values($subTypes) : null,
             'is_active' => $request->has('is_active'),
         ]);
 
@@ -99,41 +87,5 @@ class PermitTypeController extends Controller
 
         return redirect()->route('admin.permit-types.index')
             ->with('success', 'Permit Type deleted successfully.');
-    }
-
-    /**
-     * Add a sub type to an existing permit type via AJAX.
-     */
-    public function addSubType(Request $request, PermitType $permitType)
-    {
-        $validated = $request->validate([
-            'sub_type' => 'required|string|max:255',
-        ]);
-
-        $permitType->addSubType($validated['sub_type']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Sub type added successfully.',
-            'sub_types' => $permitType->sub_type,
-        ]);
-    }
-
-    /**
-     * Remove a sub type from an existing permit type via AJAX.
-     */
-    public function removeSubType(Request $request, PermitType $permitType)
-    {
-        $validated = $request->validate([
-            'sub_type' => 'required|string|max:255',
-        ]);
-
-        $permitType->removeSubType($validated['sub_type']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Sub type removed successfully.',
-            'sub_types' => $permitType->sub_type,
-        ]);
     }
 }

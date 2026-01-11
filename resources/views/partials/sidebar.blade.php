@@ -20,17 +20,23 @@
                 $isActive = false;
                 $isDisabled = $module->is_coming_soon || !$module->route;
                 
-                // Check if current route matches
-                if ($module->route && \Route::has($module->route)) {
-                    $isActive = request()->routeIs($module->route) || request()->routeIs($module->route . '.*');
+                // Check if current route matches (handle both direct and .index routes)
+                if ($module->route) {
+                    $routeBase = $module->route;
+                    if (\Route::has($routeBase) || \Route::has($routeBase . '.index')) {
+                        $isActive = request()->routeIs($routeBase) || request()->routeIs($routeBase . '.*');
+                    }
                 }
                 
                 // Check if any child is active
                 if ($module->children && $module->children->count() > 0) {
                     foreach ($module->children as $child) {
-                        if ($child->route && \Route::has($child->route) && request()->routeIs($child->route . '*')) {
-                            $isActive = true;
-                            break;
+                        if ($child->route) {
+                            $childBase = $child->route;
+                            if ((\Route::has($childBase) || \Route::has($childBase . '.index')) && request()->routeIs($childBase . '*')) {
+                                $isActive = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -51,10 +57,19 @@
                         <div class="nav-submenu">
                             @foreach($module->children as $child)
                                 @php
-                                    $childActive = $child->route && \Route::has($child->route) && request()->routeIs($child->route . '*');
-                                    $childDisabled = $child->is_coming_soon || !$child->route;
+                                    $childRouteName = $child->route;
+                                    $childRouteExists = $childRouteName && \Route::has($childRouteName);
+                                    
+                                    // If route doesn't exist, try with .index suffix (for resource routes)
+                                    if (!$childRouteExists && $childRouteName && \Route::has($childRouteName . '.index')) {
+                                        $childRouteName = $childRouteName . '.index';
+                                        $childRouteExists = true;
+                                    }
+                                    
+                                    $childActive = $childRouteExists && request()->routeIs($child->route . '*');
+                                    $childDisabled = $child->is_coming_soon || !$childRouteExists;
                                 @endphp
-                                <a href="{{ $child->route && \Route::has($child->route) && !$childDisabled ? route($child->route) : '#' }}" 
+                                <a href="{{ $childRouteExists && !$childDisabled ? route($childRouteName) : '#' }}" 
                                    class="nav-link nav-link-sub {{ $childActive ? 'active' : '' }} {{ $childDisabled ? 'disabled' : '' }}">
                                     <i class="{{ $child->icon ?? 'bi bi-circle' }}"></i>
                                     <span>
@@ -70,7 +85,18 @@
                 </div>
             @else
                 {{-- Single module item --}}
-                <a href="{{ $module->route && \Route::has($module->route) && !$isDisabled ? route($module->route) : '#' }}" 
+                @php
+                    // Handle resource routes - check for .index suffix
+                    $routeName = $module->route;
+                    $routeExists = $routeName && \Route::has($routeName);
+                    
+                    // If route doesn't exist, try with .index suffix (for resource routes)
+                    if (!$routeExists && $routeName && \Route::has($routeName . '.index')) {
+                        $routeName = $routeName . '.index';
+                        $routeExists = true;
+                    }
+                @endphp
+                <a href="{{ $routeExists ? route($routeName) : '#' }}" 
                    class="nav-link {{ $isActive ? 'active' : '' }} {{ $isDisabled ? 'disabled' : '' }}">
                     <i class="{{ $module->icon }}"></i>
                     <span>

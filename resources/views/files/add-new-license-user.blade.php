@@ -7,24 +7,74 @@
         <x-button href="{{ url()->previous() }}" variant="gold" icon="bi bi-arrow-left">back</x-button>
     </x-page-header>
 
-    {{ Auth::user()->Role->name }}
-    @if(Auth::user()->Role->name == 'Admin')
-        <div class="my-2">
+    @php
+        $role = Auth::user()->Role->name;
+    @endphp
+
+    <form action="{{ route('licenses.store') }}" method="POST">
+        @csrf
+        
+    <div class="my-2">
             <x-card title="Client Information" icon="bi bi-file-earmark-text-fill">
+                <div class="form-group">
+                    
+                    <div class="row">
+                        @if($role == 'Admin')
+                            {{-- Admin sees dropdown to select client --}}
+                            <div class="col-lg-6 mb-3">
+                                <label for="client_id" class="form-label">Client Name</label>
+                                <x-select name="client_id" placeholder="Select Client Name">
+                                    @php
+                                        $users = \App\Models\User::where('is_active', 1)
+                                        ->whereHas('Role', function ($query) {
+                                            $query->where('name', 'Client');
+                                        })->get();
+                                    @endphp
+                                    @forelse($users as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @empty
+                                        <option disabled>No active clients found</option>
+                                    @endforelse
+                                </x-select>
+                            </div>
+                        @else
+                            {{-- Client sees their own name (read-only) --}}
+                            <div class="col-lg-6 mb-3">
+                                <label for="client_name" class="form-label">Client Name</label>
+                                <x-input name="client_name" type="text" value="{{ Auth::user()->name }}" readonly />
+                                <input type="hidden" name="client_id" value="{{ Auth::id() }}">
+                            </div>
+                        @endif
+                        
+                        <div class="col-lg-6 mb-3">
+                            <label for="email" class="form-label">Billing email(s)</label>
+                            <x-input name="email" type="email" placeholder="Enter billing email(s)" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="primary_contact_info" class="form-label">Primary contact info</label>
+                            <x-input name="primary_contact_info" type="text" placeholder="Enter primary contact info" />
+                        </div>
+                    </div>
+                </div>
+            </x-card>
+        </div>
+
+        <div class="my-2">
+            <x-card title="Business Entity" icon="bi bi-file-earmark-text-fill">
                 <div class="form-group">
                     @php
                         $client = [
                             [
-                                'label' => 'Client Name',
-                                'name' => 'name',
+                                'label' => 'Legal name',
+                                'name' => 'legal_name',
                             ],
                             [
-                                'label' => 'Billing email(s)',
-                                'name' => 'email',
+                                'label' => 'DBA',
+                                'name' => 'dba',
                             ],
                             [
-                                'label' => 'Primary contact info',
-                                'name' => 'primary_contact_info',
+                                'label' => 'FEIN',
+                                'name' => 'fein',
                             ],
                         ];
                     @endphp
@@ -40,71 +90,33 @@
                 </div>
             </x-card>
         </div>
-    @endif
-
-    <div class="my-2">
-        <x-card title="Business Entity" icon="bi bi-file-earmark-text-fill">
-            <div class="form-group">
-                @php
-                    $client = [
-                        [
-                            'label' => 'Legal name',
-                            'name' => 'legal_name',
-                        ],
-                        [
-                            'label' => 'DBA',
-                            'name' => 'dba',
-                        ],
-                        [
-                            'label' => 'FEIN',
-                            'name' => 'fein',
-                        ],
-                    ];
-                @endphp
-                <div class="row">
-                    @foreach ($client as $field)
-                        <div class="col-lg-6 mb-3">
-                            <label for="{{ $field['name'] }}" class="form-label">{{ $field['label'] }}</label>
-                            <x-input name="{{ $field['name'] }}" type="text"
-                                placeholder="Enter {{ strtolower($field['label']) }}" />
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </x-card>
-    </div>
 
     <div class="my-2">
         <x-card title="Store / Location (Primary Operating Unit)" icon="bi bi-file-earmark-text-fill">
             <div class="form-group">
-                @php
-                    $client = [
-                        [
-                            'label' => 'Country',
-                            'name' => 'country',
-                        ],
-                        [
-                            'label' => 'City',
-                            'name' => 'city',
-                        ],
-                        [
-                            'label' => 'State',
-                            'name' => 'state',
-                        ],
-                        [
-                            'label' => 'Zip Code',
-                            'name' => 'zip_code',
-                        ],
-                    ];
-                @endphp
                 <div class="row">
-                    @foreach ($client as $field)
-                        <div class="col-lg-6 mb-3">
-                            <label for="{{ $field['name'] }}" class="form-label">{{ $field['label'] }}</label>
-                            <x-input name="{{ $field['name'] }}" type="text"
-                                placeholder="Enter {{ strtolower($field['label']) }}" />
-                        </div>
-                    @endforeach
+                    <div class="col-lg-6 mb-3">
+                        <label for="country" class="form-label">Country</label>
+                        <select name="country" id="country" class="form-select">
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="state" class="form-label">State</label>
+                        <select name="state" id="state" class="form-select" disabled>
+                            <option value="">Select State</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="city" class="form-label">City</label>
+                        <select name="city" id="city" class="form-select" disabled>
+                            <option value="">Select City</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="zip_code" class="form-label">Zip Code</label>
+                        <x-input name="zip_code" type="text" placeholder="Enter zip code" />
+                    </div>
                 </div>
             </div>
         </x-card>
@@ -115,16 +127,16 @@
             <div class="form-group">
                 <div class="row">
                     <div class="col-lg-6 mb-3">
-                        <label for="permit_type" class="form-label">Permit Type</label>
+                        <label for="permit_type" class="form-label">Permit Type/Sub Type</label>
+                        @php
+                            $permit_types = \App\Models\PermitType::where('is_active', 1)->get();
+                        @endphp
                         <x-select name="permit_type" placeholder="Select Permit Type">
-                            <option value="business_license">Business License</option>
-                            <option value="health_permit">Health Permit</option>
-                            <option value="fire_permit">Fire Permit</option>
-                            <option value="zoning_permit">Zoning Permit</option>
-                            <option value="building_permit">Building Permit</option>
-                            <option value="liquor_license">Liquor License</option>
-                            <option value="food_service">Food Service License</option>
-                            <option value="other">Other</option>
+                            @forelse ($permit_types as $type)
+                                <option value="{{ $type->permit_type }}">{{ $type->permit_type }}</option>
+                            @empty
+                                <option value="" disabled>No Permit Type Available</option>
+                            @endforelse
                         </x-select>
                     </div>
                     <div class="col-lg-6 mb-3">
@@ -137,13 +149,26 @@
                         </x-select>
                     </div>
                     <div class="col-lg-6 mb-3">
-                        <label for="jurisdiction" class="form-label">Jurisdiction</label>
-                        <x-select name="jurisdiction" placeholder="Select Jurisdiction">
-                            <option value="city">City</option>
-                            <option value="county">County</option>
-                            <option value="state">State</option>
-                            <option value="federal">Federal</option>
-                        </x-select>
+                        <label for="jurisdiction_country" class="form-label">Jurisdiction Country</label>
+                        <select name="jurisdiction_country" class="form-select" id="jurisdiction_country">
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="jurisdiction_state" class="form-label">Jurisdiction State</label>
+                        <select name="jurisdiction_state" class="form-select" id="jurisdiction_state" disabled>
+                            <option value="">Select State</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="jurisdiction_city" class="form-label">Jurisdiction City</label>
+                        <select name="jurisdiction_city" class="form-select" id="jurisdiction_city" disabled>
+                            <option value="">Select City</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="jurisdiction_federal" class="form-label">Federal</label>
+                        <x-input name="jurisdiction_federal" type="text" placeholder="Enter federal jurisdiction" />
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="agency_name" class="form-label">Agency Name</label>
@@ -203,4 +228,140 @@
         </x-card>
     </div>
 
+    <div class="my-3 d-flex justify-content-end gap-2">
+        <x-button href="{{ route('licenses.index') }}" variant="secondary">Cancel</x-button>
+        <x-button type="submit" variant="gold" icon="bi bi-save">Save License</x-button>
+    </div>
+
+    </form>
+
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const API_BASE = 'https://api.countrystatecity.in/v1';
+    const API_KEY = 'NHhvOEcyWk50N2Vna3VFTE00bFp3MjFKR0ZEOUhkZlg4RTk1MlJlaA==';
+
+    // Store / Location dropdowns
+    const countrySelect = document.getElementById('country');
+    const stateSelect = document.getElementById('state');
+    const citySelect = document.getElementById('city');
+
+    // Jurisdiction dropdowns
+    const jurisdictionCountrySelect = document.getElementById('jurisdiction_country');
+    const jurisdictionStateSelect = document.getElementById('jurisdiction_state');
+    const jurisdictionCitySelect = document.getElementById('jurisdiction_city');
+
+    // Load Countries for both dropdowns
+    fetch(`${API_BASE}/countries`, {
+        headers: { 'X-CSCAPI-KEY': API_KEY }
+    })
+    .then(response => response.json())
+    .then(data => {
+        let options = '<option value="">Select Country</option>';
+        data.forEach(country => {
+            options += `<option value="${country.iso2}" data-name="${country.name}">${country.name}</option>`;
+        });
+        countrySelect.innerHTML = options;
+        jurisdictionCountrySelect.innerHTML = options;
+    });
+
+    // ===== Store / Location handlers =====
+    countrySelect.addEventListener('change', function() {
+        const countryCode = this.value;
+        
+        stateSelect.innerHTML = '<option value="">Select State</option>';
+        stateSelect.disabled = true;
+        citySelect.innerHTML = '<option value="">Select City</option>';
+        citySelect.disabled = true;
+
+        if (countryCode) {
+            fetch(`${API_BASE}/countries/${countryCode}/states`, {
+                headers: { 'X-CSCAPI-KEY': API_KEY }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let options = '<option value="">Select State</option>';
+                data.forEach(state => {
+                    options += `<option value="${state.iso2}" data-name="${state.name}">${state.name}</option>`;
+                });
+                stateSelect.innerHTML = options;
+                stateSelect.disabled = false;
+            });
+        }
+    });
+
+    stateSelect.addEventListener('change', function() {
+        const countryCode = countrySelect.value;
+        const stateCode = this.value;
+        
+        citySelect.innerHTML = '<option value="">Select City</option>';
+        citySelect.disabled = true;
+
+        if (countryCode && stateCode) {
+            fetch(`${API_BASE}/countries/${countryCode}/states/${stateCode}/cities`, {
+                headers: { 'X-CSCAPI-KEY': API_KEY }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let options = '<option value="">Select City</option>';
+                data.forEach(city => {
+                    options += `<option value="${city.name}">${city.name}</option>`;
+                });
+                citySelect.innerHTML = options;
+                citySelect.disabled = false;
+            });
+        }
+    });
+
+    // ===== Jurisdiction handlers =====
+    jurisdictionCountrySelect.addEventListener('change', function() {
+        const countryCode = this.value;
+        
+        jurisdictionStateSelect.innerHTML = '<option value="">Select State</option>';
+        jurisdictionStateSelect.disabled = true;
+        jurisdictionCitySelect.innerHTML = '<option value="">Select City</option>';
+        jurisdictionCitySelect.disabled = true;
+
+        if (countryCode) {
+            fetch(`${API_BASE}/countries/${countryCode}/states`, {
+                headers: { 'X-CSCAPI-KEY': API_KEY }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let options = '<option value="">Select State</option>';
+                data.forEach(state => {
+                    options += `<option value="${state.iso2}" data-name="${state.name}">${state.name}</option>`;
+                });
+                jurisdictionStateSelect.innerHTML = options;
+                jurisdictionStateSelect.disabled = false;
+            });
+        }
+    });
+
+    jurisdictionStateSelect.addEventListener('change', function() {
+        const countryCode = jurisdictionCountrySelect.value;
+        const stateCode = this.value;
+        
+        jurisdictionCitySelect.innerHTML = '<option value="">Select City</option>';
+        jurisdictionCitySelect.disabled = true;
+
+        if (countryCode && stateCode) {
+            fetch(`${API_BASE}/countries/${countryCode}/states/${stateCode}/cities`, {
+                headers: { 'X-CSCAPI-KEY': API_KEY }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let options = '<option value="">Select City</option>';
+                data.forEach(city => {
+                    options += `<option value="${city.name}">${city.name}</option>`;
+                });
+                jurisdictionCitySelect.innerHTML = options;
+                jurisdictionCitySelect.disabled = false;
+            });
+        }
+    });
+});
+</script>
+@endpush
