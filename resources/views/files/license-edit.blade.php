@@ -4,14 +4,14 @@
 
 @section('content')
     <x-page-header title="Edit License" subtitle="Editing license for {{ $license->legal_name ?? 'N/A' }}">
-        <x-button href="{{ route('licenses.index') }}" variant="secondary" icon="bi bi-arrow-left">Back</x-button>
+        <x-button href="{{ route('admin.licenses.index') }}" variant="secondary" icon="bi bi-arrow-left">Back</x-button>
     </x-page-header>
 
     @php
         $role = Auth::user()->Role->name;
     @endphp
 
-    <form action="{{ route('licenses.update', $license) }}" method="POST">
+    <form action="{{ route('admin.licenses.update', $license) }}" method="POST">
         @csrf
         @method('PUT')
         
@@ -245,7 +245,7 @@
         </div>
 
         <div class="my-3 d-flex justify-content-end gap-2">
-            <x-button href="{{ route('licenses.index') }}" variant="secondary">Cancel</x-button>
+            <x-button href="{{ route('admin.licenses.index') }}" variant="secondary">Cancel</x-button>
             <x-button type="submit" variant="gold" icon="bi bi-save">Update License</x-button>
         </div>
     </form>

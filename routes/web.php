@@ -1,9 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LicensingController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\LicenseRequirementController;
+use App\Http\Controllers\LicensePaymentController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PermitTypeController;
@@ -22,12 +25,63 @@ Route::middleware('guest')->group(function () {
 // Logout route (must be authenticated)
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('auth.user');
 
+/*
+|--------------------------------------------------------------------------
+| Cron/Webhook Routes (External Cron Services)
+|--------------------------------------------------------------------------
+*/
+Route::get('/cron/check-licenses/{secret}', function ($secret) {
+    if ($secret !== config('app.cron_secret')) {
+        abort(403, 'Invalid cron secret');
+    }
+    Artisan::call('licenses:check-expiration');
+    return response()->json([
+        'status' => 'success',
+        'message' => 'License expiration check completed',
+        'output' => Artisan::output(),
+        'timestamp' => now()->toDateTimeString()
+    ]);
+});
 
 // Protected Admin Routes (authenticated users only)
 Route::prefix('admin')->middleware('auth.user')->group(function() {
     Route::view('dashboard', 'files.dashboard')->name('admin.dashboard');
     Route::view('settings', 'files.settings')->name('admin.settings');
     Route::resource('licenses', LicenseController::class)->names('admin.licenses');
+    
+    // License Refresh Status Route
+    Route::post('licenses/{license}/refresh-status', [LicenseController::class, 'refreshStatus'])->name('admin.licenses.refresh-status');
+    
+    // License Extend Expiration Route
+    Route::post('licenses/{license}/extend-expiration', [LicenseController::class, 'extendExpiration'])->name('admin.licenses.extend-expiration');
+    
+    // License Requirements Routes
+    Route::prefix('licenses/{license}/requirements')->name('admin.licenses.requirements.')->group(function () {
+        Route::get('/', [LicenseRequirementController::class, 'index'])->name('index');
+        Route::post('/', [LicenseRequirementController::class, 'store'])->name('store');
+        Route::post('/{requirement}/submit', [LicenseRequirementController::class, 'submit'])->name('submit');
+        Route::post('/{requirement}/approve', [LicenseRequirementController::class, 'approve'])->name('approve');
+        Route::post('/{requirement}/reject', [LicenseRequirementController::class, 'reject'])->name('reject');
+        Route::delete('/{requirement}', [LicenseRequirementController::class, 'destroy'])->name('destroy');
+        Route::post('/approve-license', [LicenseRequirementController::class, 'approveLicense'])->name('approve-license');
+        Route::post('/reject-license', [LicenseRequirementController::class, 'rejectLicense'])->name('reject-license');
+    });
+
+    // License Payments Routes
+    Route::prefix('licenses/{license}/payments')->name('admin.licenses.payments.')->group(function () {
+        Route::get('/', [LicensePaymentController::class, 'show'])->name('show');
+        Route::get('/create', [LicensePaymentController::class, 'create'])->name('create');
+        Route::post('/', [LicensePaymentController::class, 'store'])->name('store');
+        Route::post('/{payment}/add-item', [LicensePaymentController::class, 'addItem'])->name('add-item');
+        Route::delete('/{payment}/items/{item}', [LicensePaymentController::class, 'removeItem'])->name('remove-item');
+        Route::post('/{payment}/checkout', [LicensePaymentController::class, 'checkout'])->name('checkout');
+        Route::get('/{payment}/success', [LicensePaymentController::class, 'success'])->name('success');
+        Route::get('/{payment}/cancel', [LicensePaymentController::class, 'cancel'])->name('cancel');
+        Route::post('/{payment}/pay-offline', [LicensePaymentController::class, 'payOffline'])->name('pay-offline');
+        Route::post('/{payment}/override', [LicensePaymentController::class, 'override'])->name('override');
+        Route::delete('/{payment}', [LicensePaymentController::class, 'destroy'])->name('destroy');
+    });
+
     Route::resource('roles', RoleController::class)->names('admin.roles');
     Route::resource('permissions', PermissionController::class)->names('admin.permissions');
     Route::resource('permit-types', PermitTypeController::class)->names('admin.permit-types');

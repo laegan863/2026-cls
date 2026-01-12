@@ -30,7 +30,7 @@ class ModuleSeeder extends Seeder
                 'name' => 'Licensing & Permitting',
                 'slug' => 'licensing-permitting',
                 'icon' => 'bi bi-file-earmark-text',
-                'route' => 'admin.licensing',
+                'route' => 'admin.license',
                 'description' => 'Manage licenses and permits',
                 'order' => 2,
                 'is_active' => true,

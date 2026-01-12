@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cron Secret Key
+    |--------------------------------------------------------------------------
+    |
+    | This secret key is used to authenticate external cron service requests.
+    | Set a strong random string in your .env file.
+    |
+    */
+
+    'cron_secret' => env('CRON_SECRET', 'change-this-to-a-secure-random-string'),
+
 ];

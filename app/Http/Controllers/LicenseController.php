@@ -163,4 +163,65 @@ class LicenseController extends Controller
 
         return redirect()->route('admin.licenses.index')->with('success', 'License deleted successfully!');
     }
+
+    /**
+     * Refresh renewal and billing status based on expiration date.
+     */
+    public function refreshStatus(License $license)
+    {
+        $role = Auth::user()->Role->name;
+        
+        if (!in_array($role, ['Admin', 'Agent'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $license->updateRenewalBillingStatus();
+        
+        return redirect()
+            ->route('admin.licenses.show', $license)
+            ->with('success', 'Renewal and billing status updated. Renewal: ' . $license->renewal_status_label . ', Billing: ' . $license->billing_status_label);
+    }
+
+    /**
+     * Extend/renew the license expiration date (Agent/Admin only)
+     * Available after payment is completed
+     */
+    public function extendExpiration(Request $request, License $license)
+    {
+        $role = Auth::user()->Role->name;
+        
+        if (!in_array($role, ['Admin', 'Agent'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Only allow extension if billing is paid or overridden
+        if (!in_array($license->billing_status, [License::BILLING_PAID, License::BILLING_OVERRIDDEN])) {
+            return redirect()
+                ->route('admin.licenses.show', $license)
+                ->with('error', 'Cannot extend license. Payment must be completed first.');
+        }
+
+        $validated = $request->validate([
+            'new_expiration_date' => 'required|date|after:today',
+        ]);
+
+        $oldExpiration = $license->expiration_date ? $license->expiration_date->format('M d, Y') : 'N/A';
+        
+        // Update the expiration date
+        $license->update([
+            'expiration_date' => $validated['new_expiration_date'],
+            'workflow_status' => License::WORKFLOW_ACTIVE,
+            'renewal_status' => License::RENEWAL_CLOSED,
+            'billing_status' => License::BILLING_CLOSED,
+        ]);
+
+        // Refresh status based on new date (in case it's within 2 months)
+        $license->updateRenewalBillingStatus();
+
+        $newExpiration = $license->expiration_date->format('M d, Y');
+
+        return redirect()
+            ->route('admin.licenses.show', $license)
+            ->with('success', "License extended! Previous expiration: {$oldExpiration} → New expiration: {$newExpiration}");
+    }
 }

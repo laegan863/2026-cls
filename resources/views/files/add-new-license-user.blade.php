@@ -248,7 +248,7 @@
             </div>
         </x-card>
     </div>
-
+    @if(Auth::user()->Role->name != "Client")
     <div class="my-2">
         <x-card title="Additional Information" icon="bi bi-file-earmark-text-fill">
             <div class="form-group">
@@ -262,6 +262,7 @@
             </div>
         </x-card>
     </div>
+    @endif
 
     <div class="my-3 d-flex justify-content-end gap-2">
         <x-button href="{{ route('admin.licenses.index') }}" variant="secondary">Cancel</x-button>
