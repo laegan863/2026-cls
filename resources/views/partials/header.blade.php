@@ -11,149 +11,144 @@
 
     <div class="header-actions">
         <!-- Notifications Dropdown -->
+        @php
+            $notifications = Auth::user()->notifications()->latest()->take(10)->get();
+            $unreadCount = Auth::user()->unreadNotifications()->count();
+        @endphp
         <div class="dropdown">
             <button class="header-action-btn" title="Notifications" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-bell"></i>
-                <span class="notification-dot"></span>
+                @if($unreadCount > 0)
+                    <span class="notification-dot"></span>
+                @endif
             </button>
             <div class="dropdown-menu dropdown-menu-end notification-dropdown p-0 mt-2 shadow-lg border-0" style="width: 380px;">
                 <!-- Header -->
                 <div class="notification-header px-4 py-3 d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="mb-0 fw-semibold text-white">Notifications</h6>
-                        <small class="text-white-50">You have 5 unread messages</small>
+                        <small class="text-white-50">
+                            @if($unreadCount > 0)
+                                You have {{ $unreadCount }} unread {{ Str::plural('notification', $unreadCount) }}
+                            @else
+                                All caught up!
+                            @endif
+                        </small>
                     </div>
-                    <span class="badge bg-white text-primary fw-semibold px-2 py-1">5 New</span>
-                </div>
-                
-                <!-- Tabs -->
-                <div class="notification-tabs d-flex border-bottom">
-                    <button class="notification-tab active flex-fill py-2 border-0 bg-transparent">
-                        <i class="bi bi-inbox me-1"></i> All
-                    </button>
-                    <button class="notification-tab flex-fill py-2 border-0 bg-transparent">
-                        <i class="bi bi-cart me-1"></i> Orders
-                    </button>
-                    <button class="notification-tab flex-fill py-2 border-0 bg-transparent">
-                        <i class="bi bi-bell me-1"></i> Alerts
-                    </button>
+                    @if($unreadCount > 0)
+                        <span class="badge bg-white text-primary fw-semibold px-2 py-1">{{ $unreadCount }} New</span>
+                    @endif
                 </div>
                 
                 <!-- Notification Items -->
                 <div class="notification-list" style="max-height: 360px; overflow-y: auto;">
-                    <a href="#" class="notification-item unread">
-                        <div class="notification-icon-wrapper">
-                            <div class="notification-icon primary">
-                                <i class="bi bi-cart-check-fill"></i>
+                    @forelse($notifications as $notification)
+                        @php
+                            $type = $notification->data['type'] ?? 'general';
+                            $iconClass = match($type) {
+                                'payment_created' => 'primary',
+                                'payment_completed', 'payment_received' => 'success',
+                                'requirement_added' => 'info',
+                                'requirement_submitted' => 'primary',
+                                'requirement_approved', 'license_approved' => 'success',
+                                'requirement_rejected', 'license_rejected' => 'danger',
+                                'license_created' => 'gold',
+                                'license_expiring' => 'warning',
+                                'license_expired' => 'danger',
+                                'renewal_open' => 'warning',
+                                default => 'secondary',
+                            };
+                            $icon = match($type) {
+                                'payment_created' => 'bi-credit-card-fill',
+                                'payment_completed', 'payment_received' => 'bi-check-circle-fill',
+                                'requirement_added' => 'bi-file-earmark-plus-fill',
+                                'requirement_submitted' => 'bi-file-earmark-arrow-up-fill',
+                                'requirement_approved' => 'bi-file-earmark-check-fill',
+                                'requirement_rejected' => 'bi-file-earmark-x-fill',
+                                'license_created' => 'bi-file-earmark-text-fill',
+                                'license_approved' => 'bi-patch-check-fill',
+                                'license_rejected' => 'bi-x-circle-fill',
+                                'license_expiring' => 'bi-exclamation-triangle-fill',
+                                'license_expired' => 'bi-calendar-x-fill',
+                                'renewal_open' => 'bi-arrow-repeat',
+                                default => 'bi-bell-fill',
+                            };
+                            $title = match($type) {
+                                'payment_created' => 'Payment Required',
+                                'payment_completed' => 'Payment Completed',
+                                'payment_received' => 'Payment Received',
+                                'requirement_added' => 'New Requirement',
+                                'requirement_submitted' => 'Requirement Submitted',
+                                'requirement_approved' => 'Requirement Approved',
+                                'requirement_rejected' => 'Requirement Rejected',
+                                'license_created' => 'New License Application',
+                                'license_approved' => 'License Approved',
+                                'license_rejected' => 'License Rejected',
+                                'license_expiring' => 'License Expiring Soon',
+                                'license_expired' => 'License Expired',
+                                'renewal_open' => 'Renewal Window Open',
+                                default => 'Notification',
+                            };
+                        @endphp
+                        <a href="{{ $notification->data['url'] ?? '#' }}" 
+                           class="notification-item {{ is_null($notification->read_at) ? 'unread' : '' }}"
+                           onclick="markNotificationRead('{{ $notification->id }}')">
+                            <div class="notification-icon-wrapper">
+                                <div class="notification-icon {{ $iconClass }}">
+                                    <i class="bi {{ $icon }}"></i>
+                                </div>
+                                @if(is_null($notification->read_at))
+                                    <span class="notification-status"></span>
+                                @endif
                             </div>
-                            <span class="notification-status"></span>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-title">New order received</div>
-                            <div class="notification-text">Order #1234 from Emma Wilson - $299.00</div>
-                            <div class="notification-time">
-                                <i class="bi bi-clock"></i> 5 minutes ago
+                            <div class="notification-content">
+                                <div class="notification-title">{{ $title }}</div>
+                                <div class="notification-text">{{ Str::limit($notification->data['message'] ?? '', 50) }}</div>
+                                <div class="notification-time">
+                                    <i class="bi bi-clock"></i> {{ $notification->created_at->diffForHumans() }}
+                                </div>
                             </div>
-                        </div>
-                        <div class="notification-actions">
-                            <button class="btn-notification-action" title="Mark as read">
-                                <i class="bi bi-check2"></i>
-                            </button>
-                        </div>
-                    </a>
-                    
-                    <a href="#" class="notification-item unread">
-                        <div class="notification-icon-wrapper">
-                            <div class="notification-icon gold">
-                                <i class="bi bi-person-plus-fill"></i>
+                            <div class="notification-actions">
+                                @if(is_null($notification->read_at))
+                                    <button class="btn-notification-action" title="Mark as read" onclick="event.preventDefault(); markNotificationRead('{{ $notification->id }}')">
+                                        <i class="bi bi-check2"></i>
+                                    </button>
+                                @else
+                                    <button class="btn-notification-action" title="Delete" onclick="event.preventDefault(); deleteNotification('{{ $notification->id }}')">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                @endif
                             </div>
-                            <span class="notification-status"></span>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-title">New customer registered</div>
-                            <div class="notification-text">Sarah Johnson created an account</div>
-                            <div class="notification-time">
-                                <i class="bi bi-clock"></i> 15 minutes ago
+                        </a>
+                    @empty
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-bell-slash fs-1 text-muted"></i>
                             </div>
+                            <h6 class="text-muted mb-1">No notifications</h6>
+                            <small class="text-muted">You're all caught up!</small>
                         </div>
-                        <div class="notification-actions">
-                            <button class="btn-notification-action" title="Mark as read">
-                                <i class="bi bi-check2"></i>
-                            </button>
-                        </div>
-                    </a>
-                    
-                    <a href="#" class="notification-item unread">
-                        <div class="notification-icon-wrapper">
-                            <div class="notification-icon success">
-                                <i class="bi bi-check-circle-fill"></i>
-                            </div>
-                            <span class="notification-status"></span>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-title">Payment confirmed</div>
-                            <div class="notification-text">Payment for Order #1230 received</div>
-                            <div class="notification-time">
-                                <i class="bi bi-clock"></i> 32 minutes ago
-                            </div>
-                        </div>
-                        <div class="notification-actions">
-                            <button class="btn-notification-action" title="Mark as read">
-                                <i class="bi bi-check2"></i>
-                            </button>
-                        </div>
-                    </a>
-                    
-                    <a href="#" class="notification-item">
-                        <div class="notification-icon-wrapper">
-                            <div class="notification-icon info">
-                                <i class="bi bi-box-seam-fill"></i>
-                            </div>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-title">Product shipped</div>
-                            <div class="notification-text">Order #1228 is on its way</div>
-                            <div class="notification-time">
-                                <i class="bi bi-clock"></i> 1 hour ago
-                            </div>
-                        </div>
-                        <div class="notification-actions">
-                            <button class="btn-notification-action" title="Delete">
-                                <i class="bi bi-x"></i>
-                            </button>
-                        </div>
-                    </a>
-                    
-                    <a href="#" class="notification-item">
-                        <div class="notification-icon-wrapper">
-                            <div class="notification-icon warning">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                            </div>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-title">Low stock alert</div>
-                            <div class="notification-text">Premium Widget has only 5 items left</div>
-                            <div class="notification-time">
-                                <i class="bi bi-clock"></i> 2 hours ago
-                            </div>
-                        </div>
-                        <div class="notification-actions">
-                            <button class="btn-notification-action" title="Delete">
-                                <i class="bi bi-x"></i>
-                            </button>
-                        </div>
-                    </a>
+                    @endforelse
                 </div>
                 
                 <!-- Footer -->
+                @if($notifications->count() > 0)
                 <div class="notification-footer px-4 py-3 border-top d-flex justify-content-between align-items-center">
-                    <a href="#" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-check2-all me-1"></i> Mark all read
-                    </a>
-                    <a href="#" class="btn btn-sm btn-primary">
+                    @if($unreadCount > 0)
+                        <form action="{{ route('admin.notifications.mark-all-read') }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-check2-all me-1"></i> Mark all read
+                            </button>
+                        </form>
+                    @else
+                        <span></span>
+                    @endif
+                    <a href="{{ route('admin.notifications.index') }}" class="btn btn-sm btn-primary">
                         View All <i class="bi bi-arrow-right ms-1"></i>
                     </a>
                 </div>
+                @endif
             </div>
         </div>
         <div class="header-profile dropdown">

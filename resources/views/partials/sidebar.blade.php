@@ -20,7 +20,6 @@
                 $isActive = false;
                 $isDisabled = $module->is_coming_soon || !$module->route;
                 
-                // Check if current route matches (handle both direct and .index routes)
                 if ($module->route) {
                     $routeBase = $module->route;
                     if (\Route::has($routeBase) || \Route::has($routeBase . '.index')) {
@@ -28,7 +27,6 @@
                     }
                 }
                 
-                // Check if any child is active
                 if ($module->children && $module->children->count() > 0) {
                     foreach ($module->children as $child) {
                         if ($child->route) {

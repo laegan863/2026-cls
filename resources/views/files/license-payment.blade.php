@@ -344,112 +344,186 @@
         @if($paymentHistory && $paymentHistory->count() > 0)
         <div class="row mt-4">
             <div class="col-12">
-                <x-card title="Payment History" icon="bi bi-clock-history" :padding="false">
-                    <x-table>
-                        <x-slot:head>
-                            <tr>
-                                <th>Invoice #</th>
-                                <th>Date</th>
-                                <th>Items</th>
-                                <th class="text-end">Amount</th>
-                                <th>Method</th>
-                                <th>Status</th>
-                                <th>Processed By</th>
-                                <th class="text-center">Details</th>
-                            </tr>
-                        </x-slot:head>
-                        @foreach($paymentHistory as $historyPayment)
-                            <tr class="{{ $payment && $historyPayment->id === $payment->id ? 'table-primary' : '' }}">
-                                <td>
-                                    <strong>{{ $historyPayment->invoice_number }}</strong>
-                                    @if($payment && $historyPayment->id === $payment->id)
-                                        <x-badge type="info">Current</x-badge>
-                                    @endif
-                                </td>
-                                <td>
-                                    {{ $historyPayment->created_at->format('M d, Y') }}
-                                    <br><small class="text-muted">{{ $historyPayment->created_at->format('h:i A') }}</small>
-                                </td>
-                                <td>
-                                    @foreach($historyPayment->items->take(2) as $item)
-                                        <small>• {{ $item->label }}</small><br>
-                                    @endforeach
-                                    @if($historyPayment->items->count() > 2)
-                                        <small class="text-muted">+{{ $historyPayment->items->count() - 2 }} more</small>
-                                    @endif
-                                </td>
-                                <td class="text-end">
-                                    <strong>${{ number_format($historyPayment->total_amount, 2) }}</strong>
-                                </td>
-                                <td>
-                                    @if($historyPayment->payment_method)
-                                        @if($historyPayment->payment_method === 'online')
-                                            <i class="bi bi-credit-card text-primary"></i> Online
-                                        @else
-                                            <i class="bi bi-cash-stack text-success"></i> Offline
-                                        @endif
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @switch($historyPayment->status)
-                                        @case('draft')
-                                            <x-badge type="secondary">Draft</x-badge>
-                                            @break
-                                        @case('open')
-                                            <x-badge type="warning">Open</x-badge>
-                                            @break
-                                        @case('paid')
-                                            <x-badge type="success">Paid</x-badge>
-                                            @break
-                                        @case('cancelled')
-                                            <x-badge type="danger">Cancelled</x-badge>
-                                            @break
-                                        @case('overridden')
-                                            <x-badge type="info">Overridden</x-badge>
-                                            @break
-                                    @endswitch
-                                </td>
-                                <td>
-                                    @if($historyPayment->isPaid() || $historyPayment->isOverridden())
-                                        {{ $historyPayment->payer->name ?? $historyPayment->creator->name ?? 'N/A' }}
-                                        @if($historyPayment->paid_at)
-                                            <br><small class="text-muted">{{ $historyPayment->paid_at->format('M d, Y') }}</small>
-                                        @endif
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#paymentDetailModal{{ $historyPayment->id }}">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </x-table>
-                    
-                    <!-- Summary Footer -->
-                    <div class="card-footer bg-light">
-                        <div class="row text-center">
-                            <div class="col-md-3">
-                                <strong class="text-muted">Total Payments</strong>
-                                <h5 class="mb-0">{{ $paymentHistory->count() }}</h5>
-                            </div>
-                            <div class="col-md-3">
-                                <strong class="text-success">Paid</strong>
-                                <h5 class="mb-0 text-success">${{ number_format($paymentHistory->where('status', 'paid')->sum('total_amount'), 2) }}</h5>
-                            </div>
-                            <div class="col-md-3">
-                                <strong class="text-info">Overridden</strong>
-                                <h5 class="mb-0 text-info">${{ number_format($paymentHistory->where('status', 'overridden')->sum('total_amount'), 2) }}</h5>
-                            </div>
-                            <div class="col-md-3">
-                                <strong class="text-warning">Pending</strong>
-                                <h5 class="mb-0 text-warning">${{ number_format($paymentHistory->whereIn('status', ['draft', 'open'])->sum('total_amount'), 2) }}</h5>
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center py-3">
+                                <div class="rounded-circle bg-secondary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-2" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-receipt fs-4 text-secondary"></i>
+                                </div>
+                                <h3 class="mb-0 fw-bold">{{ $paymentHistory->count() }}</h3>
+                                <small class="text-muted">Total Payments</small>
                             </div>
                         </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+                            <div class="card-body text-center py-3">
+                                <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-2" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-check-circle fs-4 text-success"></i>
+                                </div>
+                                <h3 class="mb-0 fw-bold text-success">${{ number_format($paymentHistory->where('status', 'paid')->sum('total_amount'), 2) }}</h3>
+                                <small class="text-muted">Paid</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+                            <div class="card-body text-center py-3">
+                                <div class="rounded-circle bg-info bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-2" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-shield-check fs-4 text-info"></i>
+                                </div>
+                                <h3 class="mb-0 fw-bold text-info">${{ number_format($paymentHistory->where('status', 'overridden')->sum('total_amount'), 2) }}</h3>
+                                <small class="text-muted">Overridden</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+                            <div class="card-body text-center py-3">
+                                <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-2" style="width: 48px; height: 48px;">
+                                    <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+                                </div>
+                                <h3 class="mb-0 fw-bold text-warning">${{ number_format($paymentHistory->whereIn('status', ['draft', 'open'])->sum('total_amount'), 2) }}</h3>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <x-card title="Payment History" icon="bi bi-clock-history" :padding="false">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3">Invoice</th>
+                                    <th class="py-3">Date</th>
+                                    <th class="py-3">Items</th>
+                                    <th class="py-3 text-end">Amount</th>
+                                    <th class="py-3 text-center">Method</th>
+                                    <th class="py-3 text-center">Status</th>
+                                    <th class="py-3">Processed By</th>
+                                    <th class="py-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($paymentHistory as $historyPayment)
+                                <tr class="{{ $payment && $historyPayment->id === $payment->id ? 'bg-primary bg-opacity-10' : '' }}">
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded bg-light p-2 me-3">
+                                                <i class="bi bi-file-text fs-5 text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <span class="fw-semibold d-block">{{ $historyPayment->invoice_number }}</span>
+                                                @if($payment && $historyPayment->id === $payment->id)
+                                                    <span class="badge bg-primary bg-opacity-75 rounded-pill mt-1">
+                                                        <i class="bi bi-arrow-right-circle me-1"></i>Current
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="fw-medium">{{ $historyPayment->created_at->format('M d, Y') }}</span>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>{{ $historyPayment->created_at->format('h:i A') }}
+                                        </small>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="d-flex flex-column gap-1">
+                                            @foreach($historyPayment->items->take(2) as $item)
+                                                <span class="badge bg-light text-dark border">
+                                                    <i class="bi bi-dot"></i>{{ Str::limit($item->label, 20) }}
+                                                </span>
+                                            @endforeach
+                                            @if($historyPayment->items->count() > 2)
+                                                <span class="text-muted small">
+                                                    <i class="bi bi-plus-circle me-1"></i>{{ $historyPayment->items->count() - 2 }} more
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="py-3 text-end">
+                                        <span class="fs-5 fw-bold text-dark">${{ number_format($historyPayment->total_amount, 2) }}</span>
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        @if($historyPayment->payment_method)
+                                            @if($historyPayment->payment_method === 'online')
+                                                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+                                                    <i class="bi bi-credit-card me-1"></i>Online
+                                                </span>
+                                            @else
+                                                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                                                    <i class="bi bi-cash-stack me-1"></i>Offline
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        @switch($historyPayment->status)
+                                            @case('draft')
+                                                <span class="badge bg-secondary px-3 py-2 rounded-pill">
+                                                    <i class="bi bi-pencil me-1"></i>Draft
+                                                </span>
+                                                @break
+                                            @case('open')
+                                                <span class="badge bg-warning px-3 py-2 rounded-pill">
+                                                    <i class="bi bi-hourglass-split me-1"></i>Open
+                                                </span>
+                                                @break
+                                            @case('paid')
+                                                <span class="badge bg-success px-3 py-2 rounded-pill">
+                                                    <i class="bi bi-check-circle me-1"></i>Paid
+                                                </span>
+                                                @break
+                                            @case('cancelled')
+                                                <span class="badge bg-danger px-3 py-2 rounded-pill">
+                                                    <i class="bi bi-x-circle me-1"></i>Cancelled
+                                                </span>
+                                                @break
+                                            @case('overridden')
+                                                <span class="badge bg-info px-3 py-2 rounded-pill">
+                                                    <i class="bi bi-shield-check me-1"></i>Overridden
+                                                </span>
+                                                @break
+                                        @endswitch
+                                    </td>
+                                    <td class="py-3">
+                                        @if($historyPayment->isPaid() || $historyPayment->isOverridden())
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person text-secondary"></i>
+                                                </div>
+                                                <div>
+                                                    <span class="fw-medium">{{ $historyPayment->payer->name ?? $historyPayment->creator->name ?? 'N/A' }}</span>
+                                                    @if($historyPayment->paid_at)
+                                                        <br><small class="text-muted">{{ $historyPayment->paid_at->format('M d, Y') }}</small>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-light border rounded-circle p-2" 
+                                                style="width: 36px; height: 36px;"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#paymentDetailModal{{ $historyPayment->id }}"
+                                                title="View Details">
+                                            <i class="bi bi-eye text-primary"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </x-card>
             </div>

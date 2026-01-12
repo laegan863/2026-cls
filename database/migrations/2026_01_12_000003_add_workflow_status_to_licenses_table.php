@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('licenses', function (Blueprint $table) {
+            $table->enum('status', ['pending', 'incomplete', 'approved', 'active', 'expired', 'renewable'])->default('pending');
             // Main workflow status
             $table->enum('workflow_status', [
                 'pending_validation',      // Initial submission - awaiting agent/admin review

@@ -69,7 +69,8 @@ class License extends Model
 
     // Billing status constants
     const BILLING_CLOSED = 'closed';          // No billing required
-    const BILLING_OPEN = 'open';              // Payment can be created
+    const BILLING_PENDING = 'pending';        // Within renewal window, waiting for admin/agent to create payment
+    const BILLING_OPEN = 'open';              // Payment created, client can pay
     const BILLING_INVOICED = 'invoiced';      // Invoice/payment created, awaiting payment
     const BILLING_PAID = 'paid';              // Payment completed
     const BILLING_OVERRIDDEN = 'overridden';  // Payment waived
@@ -398,12 +399,20 @@ class License extends Model
 
     /**
      * Check if agent/admin can create payment
-     * Payment can be created when renewal is open/expired AND billing is open
+     * Payment can be created when renewal is open/expired AND billing is pending
      */
     public function canCreatePayment(): bool
     {
         return in_array($this->renewal_status, [self::RENEWAL_OPEN, self::RENEWAL_EXPIRED]) 
-            && $this->billing_status === self::BILLING_OPEN;
+            && $this->billing_status === self::BILLING_PENDING;
+    }
+
+    /**
+     * Mark billing as open (payment created by admin/agent)
+     */
+    public function markBillingOpen(): void
+    {
+        $this->update(['billing_status' => self::BILLING_OPEN]);
     }
 
     /**
@@ -421,16 +430,16 @@ class License extends Model
         } elseif ($this->hasExpired()) {
             // License has expired - can still renew
             $updates['renewal_status'] = self::RENEWAL_EXPIRED;
-            // If not already paid/invoiced, open billing
-            if (!in_array($this->billing_status, [self::BILLING_INVOICED, self::BILLING_PAID, self::BILLING_OVERRIDDEN])) {
-                $updates['billing_status'] = self::BILLING_OPEN;
+            // If not already open/invoiced/paid, set to pending (waiting for admin to create payment)
+            if (!in_array($this->billing_status, [self::BILLING_OPEN, self::BILLING_INVOICED, self::BILLING_PAID, self::BILLING_OVERRIDDEN])) {
+                $updates['billing_status'] = self::BILLING_PENDING;
             }
         } elseif ($this->isWithinRenewalWindow()) {
             // Within 2 months of expiry - renewal window open
             $updates['renewal_status'] = self::RENEWAL_OPEN;
-            // If not already paid/invoiced, open billing
-            if (!in_array($this->billing_status, [self::BILLING_INVOICED, self::BILLING_PAID, self::BILLING_OVERRIDDEN])) {
-                $updates['billing_status'] = self::BILLING_OPEN;
+            // If not already open/invoiced/paid, set to pending (waiting for admin to create payment)
+            if (!in_array($this->billing_status, [self::BILLING_OPEN, self::BILLING_INVOICED, self::BILLING_PAID, self::BILLING_OVERRIDDEN])) {
+                $updates['billing_status'] = self::BILLING_PENDING;
             }
         } else {
             // More than 2 months until expiry - closed
@@ -506,6 +515,7 @@ class License extends Model
     {
         return match($this->billing_status) {
             self::BILLING_CLOSED => 'Closed',
+            self::BILLING_PENDING => 'Pending',
             self::BILLING_OPEN => 'Open',
             self::BILLING_INVOICED => 'Invoiced',
             self::BILLING_PAID => 'Paid',
@@ -521,10 +531,11 @@ class License extends Model
     {
         return match($this->billing_status) {
             self::BILLING_CLOSED => 'secondary',
-            self::BILLING_OPEN => 'warning',
-            self::BILLING_INVOICED => 'info',
+            self::BILLING_PENDING => 'warning',
+            self::BILLING_OPEN => 'info',
+            self::BILLING_INVOICED => 'primary',
             self::BILLING_PAID => 'success',
-            self::BILLING_OVERRIDDEN => 'primary',
+            self::BILLING_OVERRIDDEN => 'dark',
             default => 'secondary',
         };
     }

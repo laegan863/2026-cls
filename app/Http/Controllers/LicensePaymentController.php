@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\License;
 use App\Models\LicensePayment;
 use App\Models\LicensePaymentItem;
+use App\Models\User;
 use App\Notifications\PaymentCreatedNotification;
 use App\Notifications\PaymentCompletedNotification;
 use Illuminate\Http\Request;
@@ -97,7 +98,8 @@ class LicensePaymentController extends Controller
         // Recalculate and open for payment
         $payment->openForPayment();
 
-        // Update billing status to invoiced
+        // Update billing status to open (payment created), then to invoiced (ready for client to pay)
+        $license->markBillingOpen();
         $license->markBillingInvoiced();
 
         // Notify client
@@ -231,6 +233,9 @@ class LicensePaymentController extends Controller
             // Notify client
             $license->client->notify(new PaymentCompletedNotification($license, $payment));
 
+            // Notify admins and assigned agent about payment received
+            $this->notifyAdminsAndAgent($license, $payment);
+
             return redirect()
                 ->route('admin.licenses.show', $license)
                 ->with('success', 'Payment completed successfully!');
@@ -301,6 +306,9 @@ class LicensePaymentController extends Controller
         // Notify client
         $license->client->notify(new PaymentCompletedNotification($license, $payment));
 
+        // Notify admins and assigned agent about payment received
+        $this->notifyAdminsAndAgent($license, $payment);
+
         return redirect()
             ->route('admin.licenses.show', $license)
             ->with('success', 'Payment completed! Change: $' . number_format($change, 2));
@@ -324,6 +332,9 @@ class LicensePaymentController extends Controller
 
         // Notify client
         $license->client->notify(new PaymentCompletedNotification($license, $payment));
+
+        // Notify admins and assigned agent about payment override
+        $this->notifyAdminsAndAgent($license, $payment);
 
         return redirect()
             ->route('admin.licenses.show', $license)
@@ -367,6 +378,33 @@ class LicensePaymentController extends Controller
         $role = Auth::user()->Role->name;
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
+        }
+    }
+
+    /**
+     * Notify all admins and the assigned agent about payment completion
+     */
+    private function notifyAdminsAndAgent(License $license, LicensePayment $payment): void
+    {
+        // Get all admins
+        $admins = User::whereHas('Role', function($query) {
+            $query->where('name', 'Admin');
+        })->get();
+
+        // Notify all admins
+        foreach ($admins as $admin) {
+            // Don't notify the current user if they are an admin (they already know)
+            if ($admin->id !== Auth::id()) {
+                $admin->notify(new PaymentCompletedNotification($license, $payment));
+            }
+        }
+
+        // Notify assigned agent if exists and is not the current user
+        if ($license->assigned_agent_id && $license->assigned_agent_id !== Auth::id()) {
+            $agent = $license->assignedAgent;
+            if ($agent) {
+                $agent->notify(new PaymentCompletedNotification($license, $payment));
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ use App\Http\Controllers\PermitTypeController;
 use App\Http\Controllers\PermitSubTypeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\NotificationController;
 
 // Guest Routes (non-authenticated users only)
 Route::middleware('guest')->group(function () {
@@ -55,6 +56,9 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
     // License Extend Expiration Route
     Route::post('licenses/{license}/extend-expiration', [LicenseController::class, 'extendExpiration'])->name('admin.licenses.extend-expiration');
     
+    // License Update Workflow Status Route
+    Route::post('licenses/{license}/update-status', [LicenseController::class, 'updateStatus'])->name('admin.licenses.update-status');
+    
     // License Requirements Routes
     Route::prefix('licenses/{license}/requirements')->name('admin.licenses.requirements.')->group(function () {
         Route::get('/', [LicenseRequirementController::class, 'index'])->name('index');
@@ -90,6 +94,15 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
     Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
     Route::resource('modules', ModuleController::class)->names('admin.modules');
     Route::post('modules/reorder', [ModuleController::class, 'reorder'])->name('admin.modules.reorder');
+
+    // Notifications Routes
+    Route::prefix('notifications')->name('admin.notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('/get', [NotificationController::class, 'getNotifications'])->name('get');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('read');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
+    });
 });
 
 

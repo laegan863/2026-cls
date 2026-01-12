@@ -48,6 +48,83 @@
 
     <!-- Bootstrap 5.3 JS -->
     @include('partials.script')
+    
+    <!-- Notification Functions -->
+    <script>
+        function markNotificationRead(id) {
+            fetch(`/admin/notifications/${id}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Update UI - remove unread styling
+                      const item = document.querySelector(`[onclick*="${id}"]`);
+                      if (item) {
+                          item.classList.remove('unread');
+                          const status = item.querySelector('.notification-status');
+                          if (status) status.remove();
+                      }
+                      // Update badge count
+                      updateNotificationCount();
+                  }
+              });
+        }
+
+        function deleteNotification(id) {
+            if (!confirm('Delete this notification?')) return;
+            
+            fetch(`/admin/notifications/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Remove the notification item from DOM
+                      const item = document.querySelector(`[onclick*="${id}"]`);
+                      if (item) item.remove();
+                      updateNotificationCount();
+                  }
+              });
+        }
+
+        function updateNotificationCount() {
+            fetch('/admin/notifications/get', {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  const dot = document.querySelector('.notification-dot');
+                  const badge = document.querySelector('.notification-header .badge');
+                  const subtitle = document.querySelector('.notification-header small');
+                  
+                  if (data.unread_count > 0) {
+                      if (!dot) {
+                          const btn = document.querySelector('.header-action-btn');
+                          const newDot = document.createElement('span');
+                          newDot.className = 'notification-dot';
+                          btn.appendChild(newDot);
+                      }
+                      if (badge) badge.textContent = data.unread_count + ' New';
+                      if (subtitle) subtitle.textContent = `You have ${data.unread_count} unread notification${data.unread_count > 1 ? 's' : ''}`;
+                  } else {
+                      if (dot) dot.remove();
+                      if (badge) badge.remove();
+                      if (subtitle) subtitle.textContent = 'All caught up!';
+                  }
+              });
+        }
+    </script>
+    
     @stack('scripts')
 </body>
 

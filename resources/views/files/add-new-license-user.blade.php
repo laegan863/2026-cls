@@ -11,7 +11,7 @@
         $role = Auth::user()->Role->name;
     @endphp
 
-    <form action="{{ route('admin.licenses.store') }}" method="POST">
+    <form action="{{ route('admin.licenses.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         
     <div class="my-2">
@@ -250,15 +250,48 @@
     </div>
     @if(Auth::user()->Role->name != "Client")
     <div class="my-2">
-        <x-card title="Additional Information" icon="bi bi-file-earmark-text-fill">
-            <div class="form-group">
-                <div class="col-3 mb-3">
-                    <x-button type="button" variant="primary" onclick="addField()" icon="bi bi-plus-lg">Add Another Field</x-button>
+        <x-card title="Additional Information" icon="bi bi-plus-circle">
+            <p class="text-muted mb-3">Add requirements or additional information for this license. You can optionally include the client's response directly.</p>
+            
+            <!-- Template for dynamic fields (hidden) -->
+            <template id="requirement-template">
+                <div class="content-card mb-3" style="border: 1px solid #dee2e6; border-radius: 8px;">
+                    <div class="content-card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h6 class="card-title mb-0 requirement-title">Requirement #1</h6>
+                            <button type="button" class="btn btn-danger btn-sm remove-btn">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-5 mb-3">
+                                <label class="form-label">Requirement Label <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-custom" name="requirements[0][label]" placeholder="e.g., Business License Copy" required>
+                            </div>
+                            <div class="col-lg-7 mb-3">
+                                <label class="form-label">Description</label>
+                                <input type="text" class="form-control form-control-custom" name="requirements[0][description]" placeholder="Additional details about this requirement">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Client Response</label>
+                                <textarea class="form-control form-control-custom" name="requirements[0][value]" rows="3" placeholder="Enter client's response (optional)"></textarea>
+                            </div>
+                            <div class="col-lg-6 mb-3">
+                                <label class="form-label">Upload File (optional)</label>
+                                <input type="file" class="form-control" name="requirement_files[0]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif">
+                                <small class="text-muted">Max file size: 10MB</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Dynamic Fields Container -->
-                <div id="dynamic-fields-container">
-                </div>
+            </template>
+            
+            <!-- Dynamic Fields Container -->
+            <div id="dynamic-fields-container">
+            </div>
+            
+            <div class="d-flex gap-2 mt-3">
+                <x-button type="button" variant="secondary" onclick="addField()" icon="bi bi-plus-lg">Add Another</x-button>
             </div>
         </x-card>
     </div>
@@ -406,27 +439,44 @@ let fieldCounter = 0;
 function addField() {
     fieldCounter++;
     const container = document.getElementById('dynamic-fields-container');
+    const template = document.getElementById('requirement-template');
     
-    const fieldRow = document.createElement('div');
-    fieldRow.className = 'row mb-3 dynamic-field-row';
-    fieldRow.id = `dynamic-field-${fieldCounter}`;
+    // Clone the template content
+    const clone = template.content.cloneNode(true);
     
-    fieldRow.innerHTML = `
-        <div class="col-lg-4">
-            <label class="form-label">Field Label</label>
-            <x-input name="custom_fields[${fieldCounter}][label]" type="textarea" placeholder="Enter field label" />
-        </div>
-        <div class="col-lg-6">
-            <label class="form-label">Field Value</label>
-            <x-input name="custom_fields[${fieldCounter}][value]" type="textarea" placeholder="Enter field value" />
-        </div>
-        <div class="col-lg-2 d-flex align-items-end">
-            <x-button type="button" variant="danger" onclick="removeField(${fieldCounter})" icon="bi bi-trash">Remove</x-button>
-
-        </div>
-    `;
+    // Get the card element (x-card renders to content-card class)
+    const card = clone.querySelector('.content-card');
+    if (!card) {
+        console.error('Card element not found in template');
+        return;
+    }
+    card.id = `dynamic-field-${fieldCounter}`;
     
-    container.appendChild(fieldRow);
+    // Update the title
+    const title = clone.querySelector('.requirement-title');
+    if (title) {
+        title.textContent = `Requirement #${fieldCounter}`;
+    }
+    
+    // Update all input/textarea names with the correct counter
+    clone.querySelectorAll('[name]').forEach(input => {
+        input.name = input.name.replace('[0]', `[${fieldCounter}]`);
+        // Also update the id if it exists
+        if (input.id) {
+            input.id = input.id.replace('[0]', `[${fieldCounter}]`);
+        }
+    });
+    
+    // Add remove button functionality
+    const removeBtn = clone.querySelector('.remove-btn');
+    if (removeBtn) {
+        const currentCounter = fieldCounter;
+        removeBtn.onclick = function() {
+            removeField(currentCounter);
+        };
+    }
+    
+    container.appendChild(clone);
 }
 
 function removeField(id) {
