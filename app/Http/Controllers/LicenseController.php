@@ -4,8 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\License;
 use App\Models\User;
+use App\Models\LicenseRequirement;
+use App\Notifications\LicenseCreatedNotification;
+use App\Notifications\LicenseStatusNotification;
+use App\Notifications\RenewalStatusNotification;
+use App\Notifications\BillingStatusNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class LicenseController extends Controller
@@ -69,6 +75,12 @@ class LicenseController extends Controller
             'renewal_status' => 'nullable|string',
             'billing_status' => 'nullable|string',
             'submission_confirmation_number' => 'nullable|string',
+            // Requirements validation
+            'requirements' => 'nullable|array',
+            'requirements.*.label' => 'nullable|string|max:255',
+            'requirements.*.description' => 'nullable|string',
+            'requirements.*.value' => 'nullable|string',
+            'requirement_files.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,gif|max:10240',
         ]);
 
         if ($role === 'Admin') {
@@ -86,8 +98,56 @@ class LicenseController extends Controller
         }
         
         unset($validated['assigned_agent']);
+        // Remove requirements from validated data (they go to separate table)
+        unset($validated['requirements']);
+        unset($validated['requirement_files']);
+        
         $validated['transaction_id'] = Str::random(12);
-        License::create($validated);
+        $license = License::create($validated);
+
+        // Update renewal and billing status based on expiration date
+        // - If within 2 months: renewal = open, billing = pending
+        // - If more than 2 months: renewal = closed, billing = closed
+        $license->updateRenewalBillingStatus();
+
+        // Handle requirements if any
+        if ($request->has('requirements')) {
+            $requirements = $request->input('requirements');
+            $requirementFiles = $request->file('requirement_files', []);
+            
+            foreach ($requirements as $index => $requirement) {
+                // Skip empty requirements (no label)
+                if (empty($requirement['label'])) {
+                    continue;
+                }
+                
+                $filePath = null;
+                
+                // Handle file upload if exists
+                if (isset($requirementFiles[$index]) && $requirementFiles[$index]->isValid()) {
+                    $file = $requirementFiles[$index];
+                    $fileName = time() . '_' . $index . '_' . $file->getClientOriginalName();
+                    $filePath = $file->storeAs('requirements/' . $license->id, $fileName, 'public');
+                }
+                
+                // Determine status based on whether value is provided
+                $status = !empty($requirement['value']) ? LicenseRequirement::STATUS_SUBMITTED : LicenseRequirement::STATUS_PENDING;
+                
+                LicenseRequirement::create([
+                    'license_id' => $license->id,
+                    'created_by' => Auth::id(),
+                    'label' => $requirement['label'],
+                    'description' => $requirement['description'] ?? null,
+                    'value' => $requirement['value'] ?? null,
+                    'file_path' => $filePath,
+                    'status' => $status,
+                    'submitted_at' => !empty($requirement['value']) ? now() : null,
+                ]);
+            }
+        }
+
+        // Send notification to admins and assigned agent about new license
+        $this->notifyLicenseCreated($license);
 
         return redirect()->route('admin.licenses.index')->with('success', 'License created successfully!');
     }
@@ -223,5 +283,138 @@ class LicenseController extends Controller
         return redirect()
             ->route('admin.licenses.show', $license)
             ->with('success', "License extended! Previous expiration: {$oldExpiration} → New expiration: {$newExpiration}");
+    }
+
+    /**
+     * Update license workflow status (Admin/Agent only)
+     */
+    public function updateStatus(Request $request, License $license)
+    {
+        $role = Auth::user()->Role->name;
+        
+        if (!in_array($role, ['Admin', 'Agent'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'workflow_status' => 'required|string|in:' . implode(',', [
+                License::STATUS_PENDING,
+                License::STATUS_SUBMITTED,
+                License::STATUS_UNDER_REVIEW,
+                License::STATUS_APPROVED,
+                License::STATUS_REJECTED,
+                License::STATUS_ON_HOLD,
+                License::STATUS_CANCELLED,
+            ]),
+        ]);
+
+        $oldStatus = $license->workflow_status;
+        $newStatus = $validated['workflow_status'];
+
+        if ($oldStatus !== $newStatus) {
+            $license->update(['workflow_status' => $newStatus]);
+
+            // Notify client about status change
+            $client = $license->client;
+            if ($client) {
+                $client->notify(new LicenseStatusNotification($license, $oldStatus, $newStatus, Auth::user()->name));
+            }
+        }
+
+        return redirect()
+            ->route('admin.licenses.show', $license)
+            ->with('success', 'License status updated to ' . ucfirst(str_replace('_', ' ', $newStatus)));
+    }
+
+    /**
+     * Send notification when a new license is created
+     */
+    protected function notifyLicenseCreated(License $license): void
+    {
+        // Get all admins to notify
+        $admins = User::whereHas('Role', function($query) {
+            $query->where('name', 'Admin');
+        })->get();
+
+        // Notify admins
+        foreach ($admins as $admin) {
+            $admin->notify(new LicenseCreatedNotification($license, Auth::user()));
+        }
+
+        // Notify assigned agent if different from creator
+        if ($license->assigned_agent_id && $license->assigned_agent_id != Auth::id()) {
+            $agent = $license->assignedAgent;
+            if ($agent) {
+                $agent->notify(new LicenseCreatedNotification($license, Auth::user()));
+            }
+        }
+
+        // Notify client if created by admin/agent on their behalf
+        if ($license->client_id && $license->client_id != Auth::id()) {
+            $client = $license->client;
+            if ($client) {
+                $client->notify(new LicenseCreatedNotification($license, Auth::user()));
+            }
+        }
+    }
+
+    /**
+     * Send notification when license status changes
+     */
+    protected function notifyStatusChange(License $license, string $oldStatus, string $newStatus): void
+    {
+        // Notify client
+        $client = $license->client;
+        if ($client) {
+            $client->notify(new LicenseStatusNotification($license, $oldStatus, $newStatus, Auth::user()->name));
+        }
+
+        // Notify assigned agent if different from current user
+        if ($license->assigned_agent_id && $license->assigned_agent_id != Auth::id()) {
+            $agent = $license->assignedAgent;
+            if ($agent) {
+                $agent->notify(new LicenseStatusNotification($license, $oldStatus, $newStatus, Auth::user()->name));
+            }
+        }
+    }
+
+    /**
+     * Send renewal status notification
+     */
+    protected function notifyRenewalStatus(License $license): void
+    {
+        // Notify client
+        $client = $license->client;
+        if ($client) {
+            $client->notify(new RenewalStatusNotification($license, $license->renewal_status));
+        }
+
+        // Notify assigned agent
+        if ($license->assigned_agent_id) {
+            $agent = $license->assignedAgent;
+            if ($agent) {
+                $agent->notify(new RenewalStatusNotification($license, $license->renewal_status));
+            }
+        }
+    }
+
+    /**
+     * Send billing status notification
+     */
+    protected function notifyBillingStatus(License $license, ?float $amount = null): void
+    {
+        // Notify client
+        $client = $license->client;
+        if ($client) {
+            $client->notify(new BillingStatusNotification($license, $license->billing_status, $amount));
+        }
+
+        // Notify assigned agent
+        if ($license->assigned_agent_id) {
+            $agent = $license->assignedAgent;
+            if ($agent) {
+                $agent->notify(new BillingStatusNotification($license, $license->billing_status, $amount));
+            }
+        }
     }
 }
