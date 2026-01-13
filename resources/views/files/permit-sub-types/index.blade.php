@@ -37,12 +37,12 @@
                             </td>
                             <td>
                                 <div class="d-flex gap-1">
-                                    <a href="{{ route('admin.permit-sub-types.show', $sub) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
-                                    <a href="{{ route('admin.permit-sub-types.edit', $sub) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                                    <x-button href="{{ route('admin.permit-sub-types.show', $sub) }}" variant="outline-info" size="sm" icon="bi bi-eye" title="View"></x-button>
+                                    <x-button href="{{ route('admin.permit-sub-types.edit', $sub) }}" variant="outline-warning" size="sm" icon="bi bi-pencil" title="Edit"></x-button>
                                     <form action="{{ route('admin.permit-sub-types.destroy', $sub) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this sub type?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                        <x-button type="submit" variant="outline-danger" size="sm" icon="bi bi-trash" title="Delete"></x-button>
                                     </form>
                                 </div>
                             </td>

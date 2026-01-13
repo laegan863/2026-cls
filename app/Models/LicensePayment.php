@@ -12,6 +12,7 @@ class LicensePayment extends Model
     protected $fillable = [
         'license_id',
         'created_by',
+        'assigned_agent_id',
         'invoice_number',
         'total_amount',
         'status',
@@ -60,6 +61,11 @@ class LicensePayment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function assignedAgent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_agent_id');
     }
 
     public function payer(): BelongsTo

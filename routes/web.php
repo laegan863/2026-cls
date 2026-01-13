@@ -14,6 +14,9 @@ use App\Http\Controllers\PermitSubTypeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
 
 // Guest Routes (non-authenticated users only)
 Route::middleware('guest')->group(function () {
@@ -46,20 +49,15 @@ Route::get('/cron/check-licenses/{secret}', function ($secret) {
 
 // Protected Admin Routes (authenticated users only)
 Route::prefix('admin')->middleware('auth.user')->group(function() {
-    Route::view('dashboard', 'files.dashboard')->name('admin.dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::view('settings', 'files.settings')->name('admin.settings');
     Route::resource('licenses', LicenseController::class)->names('admin.licenses');
-    
-    // License Refresh Status Route
+    Route::resource('agency', AgencyController::class)->names('admin.agency');
     Route::post('licenses/{license}/refresh-status', [LicenseController::class, 'refreshStatus'])->name('admin.licenses.refresh-status');
-    
-    // License Extend Expiration Route
+    Route::post('licenses/bulk-refresh', [LicenseController::class, 'bulkRefreshStatus'])->name('admin.licenses.bulk-refresh');
     Route::post('licenses/{license}/extend-expiration', [LicenseController::class, 'extendExpiration'])->name('admin.licenses.extend-expiration');
-    
-    // License Update Workflow Status Route
     Route::post('licenses/{license}/update-status', [LicenseController::class, 'updateStatus'])->name('admin.licenses.update-status');
     
-    // License Requirements Routes
     Route::prefix('licenses/{license}/requirements')->name('admin.licenses.requirements.')->group(function () {
         Route::get('/', [LicenseRequirementController::class, 'index'])->name('index');
         Route::post('/', [LicenseRequirementController::class, 'store'])->name('store');
@@ -70,8 +68,6 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
         Route::post('/approve-license', [LicenseRequirementController::class, 'approveLicense'])->name('approve-license');
         Route::post('/reject-license', [LicenseRequirementController::class, 'rejectLicense'])->name('reject-license');
     });
-
-    // License Payments Routes
     Route::prefix('licenses/{license}/payments')->name('admin.licenses.payments.')->group(function () {
         Route::get('/', [LicensePaymentController::class, 'show'])->name('show');
         Route::get('/create', [LicensePaymentController::class, 'create'])->name('create');
@@ -103,6 +99,13 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
         Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
         Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
     });
+
+    // Profile Routes
+    Route::get('profile', [ProfileController::class, 'show'])->name('admin.profile');
+    Route::get('profile/edit', [ProfileController::class, 'edit'])->name('admin.profile.edit');
+    Route::put('profile', [ProfileController::class, 'update'])->name('admin.profile.update');
+    Route::get('profile/password', [ProfileController::class, 'showChangePassword'])->name('admin.profile.password');
+    Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('admin.profile.password.update');
 });
 
 

@@ -8,6 +8,12 @@
     @endphp
 
     <x-page-header title="Licensing & Permitting" subtitle="Welcome back, {{ Auth::user()->name }}! Here's what's happening today.">
+        @if($role === 'Admin' || $role === 'Agent')
+            <form action="{{ route('admin.licenses.bulk-refresh') }}" method="POST" class="d-inline me-2">
+                @csrf
+                <x-button type="submit" variant="primary" icon="bi bi-arrow-clockwise">Bulk Refresh Status</x-button>
+            </form>
+        @endif
         <x-button href="{{ route('admin.licenses.create') }}" variant="gold" icon="bi bi-plus-lg">Add New</x-button>
     </x-page-header>
 
@@ -29,7 +35,6 @@
                             <th>Permit Type</th>
                             <th>Location</th>
                             <th>Renewal</th>
-                            <th>Billing</th>
                             <th>Expiration</th>
                             {{-- <th>Status</th> --}}
                             <th>Actions</th>
@@ -53,9 +58,6 @@
                             <td>{{ $license->city ?? '' }}{{ $license->city && $license->state ? ', ' : '' }}{{ $license->state ?? '' }}</td>
                             <td>
                                 <x-badge type="{{ $license->renewal_status_badge ?? 'secondary' }}">{{ $license->renewal_status_label ?? 'Closed' }}</x-badge>
-                            </td>
-                            <td>
-                                <x-badge type="{{ $license->billing_status_badge ?? 'secondary' }}">{{ $license->billing_status_label ?? 'Closed' }}</x-badge>
                             </td>
                             <td>
                                 @if($license->expiration_date)

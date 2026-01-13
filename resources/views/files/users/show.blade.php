@@ -99,20 +99,17 @@
                     <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="btn btn-{{ $user->is_active ? 'warning' : 'success' }} w-100">
-                            <i class="bi bi-{{ $user->is_active ? 'x-circle' : 'check-circle' }} me-1"></i>
-                            {{ $user->is_active ? 'Deactivate User' : 'Activate User' }}
-                        </button>
+                        @if($user->is_active)
+                            <x-button type="submit" variant="warning" block icon="bi bi-x-circle">Deactivate User</x-button>
+                        @else
+                            <x-button type="submit" variant="success" block icon="bi bi-check-circle">Activate User</x-button>
+                        @endif
                     </form>
-                    <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil me-1"></i> Edit User
-                    </a>
+                    <x-button href="{{ route('admin.users.edit', $user) }}" variant="outline-primary" block icon="bi bi-pencil">Edit User</x-button>
                     <form action="{{ route('admin.users.destroy', $user) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this user?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-outline-danger w-100">
-                            <i class="bi bi-trash me-1"></i> Delete User
-                        </button>
+                        <x-button type="submit" variant="outline-danger" block icon="bi bi-trash">Delete User</x-button>
                     </form>
                 </div>
             </x-card>

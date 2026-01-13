@@ -28,7 +28,7 @@
                             <th>Users</th>
                             <th>Permissions</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </x-slot:head>
 
@@ -55,18 +55,12 @@
                             </td>
                             <td>
                                 <div class="d-flex gap-1">
-                                    <a href="{{ route('admin.roles.show', $role) }}" class="btn btn-sm btn-outline-info" title="View">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="{{ route('admin.roles.edit', $role) }}" class="btn btn-sm btn-outline-warning" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
+                                    <x-button href="{{ route('admin.roles.show', $role) }}" variant="outline-info" size="sm" icon="bi bi-eye" title="View"></x-button>
+                                    <x-button href="{{ route('admin.roles.edit', $role) }}" variant="outline-warning" size="sm" icon="bi bi-pencil" title="Edit"></x-button>
                                     <form action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this role?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <x-button type="submit" variant="outline-danger" size="sm" icon="bi bi-trash" title="Delete"></x-button>
                                     </form>
                                 </div>
                             </td>

@@ -86,24 +86,18 @@
                                     </div>
                                     <div class="d-flex gap-2">
                                         @if($notification->data['url'] ?? null)
-                                            <a href="{{ $notification->data['url'] }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
+                                            <x-button href="{{ $notification->data['url'] }}" variant="outline-primary" size="sm" icon="bi bi-eye"></x-button>
                                         @endif
                                         @if(is_null($notification->read_at))
                                             <form action="{{ route('admin.notifications.read', $notification->id) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Mark as read">
-                                                    <i class="bi bi-check2"></i>
-                                                </button>
+                                                <x-button type="submit" variant="outline-success" size="sm" icon="bi bi-check2" title="Mark as read"></x-button>
                                             </form>
                                         @endif
-                                        <form action="{{ route('admin.notifications.destroy', $notification->id) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('admin.notifications.destroy', $notification->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this notification?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Delete this notification?')">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <x-button type="submit" variant="outline-danger" size="sm" icon="bi bi-trash" title="Delete"></x-button>
                                         </form>
                                     </div>
                                 </div>

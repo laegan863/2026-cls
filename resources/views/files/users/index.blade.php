@@ -92,25 +92,21 @@
                             <td>{{ $user->created_at->format('M d, Y') }}</td>
                             <td>
                                 <div class="d-flex gap-1">
-                                    <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-outline-info" title="View">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-warning" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
+                                    <x-button href="{{ route('admin.users.show', $user) }}" variant="outline-info" size="sm" icon="bi bi-eye" title="View"></x-button>
+                                    <x-button href="{{ route('admin.users.edit', $user) }}" variant="outline-warning" size="sm" icon="bi bi-pencil" title="Edit"></x-button>
                                     <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="btn btn-sm btn-outline-{{ $user->is_active ? 'secondary' : 'success' }}" title="{{ $user->is_active ? 'Deactivate' : 'Activate' }}">
-                                            <i class="bi bi-{{ $user->is_active ? 'x-circle' : 'check-circle' }}"></i>
-                                        </button>
+                                        @if($user->is_active)
+                                            <x-button type="submit" variant="outline-secondary" size="sm" icon="bi bi-x-circle" title="Deactivate"></x-button>
+                                        @else
+                                            <x-button type="submit" variant="outline-success" size="sm" icon="bi bi-check-circle" title="Activate"></x-button>
+                                        @endif
                                     </form>
                                     <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <x-button type="submit" variant="outline-danger" size="sm" icon="bi bi-trash" title="Delete"></x-button>
                                     </form>
                                 </div>
                             </td>

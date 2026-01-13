@@ -137,16 +137,12 @@
                     @if($unreadCount > 0)
                         <form action="{{ route('admin.notifications.mark-all-read') }}" method="POST" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-check2-all me-1"></i> Mark all read
-                            </button>
+                            <x-button type="submit" variant="outline-primary" size="sm" icon="bi bi-check2-all">Mark all read</x-button>
                         </form>
                     @else
                         <span></span>
                     @endif
-                    <a href="{{ route('admin.notifications.index') }}" class="btn btn-sm btn-primary">
-                        View All <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
+                    <x-button href="{{ route('admin.notifications.index') }}" variant="primary" size="sm">View All <i class="bi bi-arrow-right ms-1"></i></x-button>
                 </div>
                 @endif
             </div>
@@ -154,12 +150,12 @@
         <div class="header-profile dropdown">
             <div class="d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="header-profile-avatar">
-                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=d4a94c&color=1a2b4a&bold=true"
-                        alt="John Doe">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=d4a94c&color=1a2b4a&bold=true"
+                        alt="{{ Auth::user()->name }}">
                 </div>
                 <div class="header-profile-info d-none d-md-block">
-                    <span class="header-profile-name">John Doe</span>
-                    <span class="header-profile-role">Administrator</span>
+                    <span class="header-profile-name">{{ Auth::user()->name }}</span>
+                    <span class="header-profile-role">{{ Auth::user()->role->name ?? 'User' }}</span>
                 </div>
                 <i class="bi bi-chevron-down text-muted small"></i>
             </div>
@@ -168,28 +164,29 @@
                     <div class="d-flex align-items-center gap-2">
                         <div class="avatar"
                             style="background: linear-gradient(135deg, var(--bs-gold) 0%, var(--bs-gold-dark) 100%); color: var(--bs-primary-dark);">
-                            JD</div>
+                            {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</div>
                         <div>
-                            <div class="fw-semibold">John Doe</div>
-                            <small class="text-muted">john@blueside.com</small>
+                            <div class="fw-semibold">{{ Auth::user()->name }}</div>
+                            <small class="text-muted">{{ Auth::user()->email }}</small>
                         </div>
                     </div>
                 </li>
                 <li>
-                    <a class="dropdown-item py-2" href="{{ url('/admin/profile') }}">
+                    <a class="dropdown-item py-2" href="{{ route('admin.profile') }}">
                         <i class="fas fa-user me-2 text-muted"></i>
                         My Profile
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item py-2" href="#"><i class="fas fa-cog me-2 text-muted"></i>
-                        Account Settings
+                    <a class="dropdown-item py-2" href="{{ route('admin.profile.edit') }}">
+                        <i class="fas fa-edit me-2 text-muted"></i>
+                        Edit Profile
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item py-2" href="#">
-                        <i class="fas fa-file-invoice me-2 text-muted"></i> 
-                        Billing
+                    <a class="dropdown-item py-2" href="{{ route('admin.profile.password') }}">
+                        <i class="fas fa-key me-2 text-muted"></i>
+                        Change Password
                     </a>
                 </li>
                 <li>

@@ -114,9 +114,7 @@
                                         {{ $requirement->value }}
                                     @endif
                                     @if($requirement->file_path)
-                                        <a href="{{ Storage::url($requirement->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-file-earmark"></i> View File
-                                        </a>
+                                        <x-button href="{{ Storage::url($requirement->file_path) }}" target="_blank" variant="outline-primary" size="sm" icon="bi bi-file-earmark">View File</x-button>
                                     @endif
                                     @if(!$requirement->value && !$requirement->file_path)
                                         <span class="text-muted">Not submitted</span>
@@ -197,7 +195,7 @@
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <x-button type="button" variant="secondary" data-bs-dismiss="modal">Cancel</x-button>
                                                 <x-button type="submit" variant="gold">Submit</x-button>
                                             </div>
                                         </form>
@@ -224,7 +222,7 @@
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <x-button type="button" variant="secondary" data-bs-dismiss="modal">Cancel</x-button>
                                                 <x-button type="submit" variant="danger">Reject</x-button>
                                             </div>
                                         </form>
@@ -265,7 +263,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <x-button type="button" variant="secondary" data-bs-dismiss="modal">Cancel</x-button>
                         <x-button type="submit" variant="danger">Reject License</x-button>
                     </div>
                 </form>
@@ -297,7 +295,7 @@ function addRequirement() {
             <input type="text" name="requirements[${requirementIndex}][description]" class="form-control" placeholder="Additional details about this requirement" />
         </div>
         <div class="col-lg-2 d-flex align-items-end">
-            <button type="button" class="btn btn-danger" onclick="removeRequirement(this)">
+            <button type="button" class="btn btn-danger-custom" onclick="removeRequirement(this)">
                 <i class="bi bi-trash"></i> Remove
             </button>
         </div>

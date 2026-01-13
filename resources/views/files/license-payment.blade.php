@@ -92,9 +92,7 @@
                                         <form action="{{ route('admin.licenses.payments.remove-item', [$license, $payment, $item]) }}" method="POST" class="d-inline" onsubmit="return confirm('Remove this item?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <x-button type="submit" variant="outline-danger" size="sm" icon="bi bi-trash"></x-button>
                                         </form>
                                     </td>
                                 @endif
@@ -239,10 +237,10 @@
 
                                 <!-- Quick amount buttons -->
                                 <div class="d-flex flex-wrap gap-2 mb-3">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAmount({{ $payment->total_amount }})">Exact</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAmount({{ ceil($payment->total_amount / 10) * 10 }})">$@php echo ceil($payment->total_amount / 10) * 10; @endphp</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAmount({{ ceil($payment->total_amount / 50) * 50 }})">$@php echo ceil($payment->total_amount / 50) * 50; @endphp</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAmount({{ ceil($payment->total_amount / 100) * 100 }})">$@php echo ceil($payment->total_amount / 100) * 100; @endphp</button>
+                                    <x-button type="button" variant="outline-secondary" size="sm" onclick="setAmount({{ $payment->total_amount }})">Exact</x-button>
+                                    <x-button type="button" variant="outline-secondary" size="sm" onclick="setAmount({{ ceil($payment->total_amount / 10) * 10 }})">${{ ceil($payment->total_amount / 10) * 10 }}</x-button>
+                                    <x-button type="button" variant="outline-secondary" size="sm" onclick="setAmount({{ ceil($payment->total_amount / 50) * 50 }})">${{ ceil($payment->total_amount / 50) * 50 }}</x-button>
+                                    <x-button type="button" variant="outline-secondary" size="sm" onclick="setAmount({{ ceil($payment->total_amount / 100) * 100 }})">${{ ceil($payment->total_amount / 100) * 100 }}</x-button>
                                 </div>
 
                                 <div class="mb-3">
@@ -331,7 +329,7 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <x-button type="button" variant="secondary" data-bs-dismiss="modal">Cancel</x-button>
                             <x-button type="submit" variant="warning">Override Payment</x-button>
                         </div>
                     </form>
@@ -511,14 +509,15 @@
                                         @endif
                                     </td>
                                     <td class="py-3 text-center">
-                                        <button type="button" 
-                                                class="btn btn-sm btn-light border rounded-circle p-2" 
+                                        <x-button type="button" 
+                                                variant="light"
+                                                size="sm"
+                                                class="border rounded-circle p-2" 
                                                 style="width: 36px; height: 36px;"
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#paymentDetailModal{{ $historyPayment->id }}"
-                                                title="View Details">
-                                            <i class="bi bi-eye text-primary"></i>
-                                        </button>
+                                                title="View Details"
+                                                icon="bi bi-eye text-primary"></x-button>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -626,7 +625,7 @@
                         @endif
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <x-button type="button" variant="secondary" data-bs-dismiss="modal">Close</x-button>
                     </div>
                 </div>
             </div>
@@ -724,9 +723,7 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#paymentDetailModalNoActive{{ $historyPayment->id }}">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
+                                    <x-button type="button" variant="outline-primary" size="sm" icon="bi bi-eye" data-bs-toggle="modal" data-bs-target="#paymentDetailModalNoActive{{ $historyPayment->id }}"></x-button>
                                 </td>
                             </tr>
                         @endforeach
@@ -827,7 +824,7 @@
                         @endif
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <x-button type="button" variant="secondary" data-bs-dismiss="modal">Close</x-button>
                     </div>
                 </div>
             </div>

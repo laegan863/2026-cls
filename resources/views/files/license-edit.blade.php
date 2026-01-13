@@ -4,7 +4,7 @@
 
 @section('content')
     <x-page-header title="Edit License" subtitle="Editing license for {{ $license->legal_name ?? 'N/A' }}">
-        <x-button href="{{ route('admin.licenses.index') }}" variant="secondary" icon="bi bi-arrow-left">Back</x-button>
+        <x-button href="{{ route('admin.licenses.index') }}" variant="primary" icon="bi bi-arrow-left">Back</x-button>
     </x-page-header>
 
     @php
@@ -182,7 +182,16 @@
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="agency_name" class="form-label">Agency Name</label>
-                            <x-input name="agency_name" type="text" placeholder="Enter agency name" value="{{ old('agency_name', $license->agency_name) }}" />
+                            @php
+                                $agencies = \App\Models\Agency::where('is_active', true)->orderBy('name')->get();
+                            @endphp
+                            <x-select name="agency_name" placeholder="Select Agency">
+                                @forelse ($agencies as $agency)
+                                    <option value="{{ $agency->name }}" {{ old('agency_name', $license->agency_name) == $agency->name ? 'selected' : '' }}>{{ $agency->name }}</option>
+                                @empty
+                                    <option value="" disabled>No agencies available</option>
+                                @endforelse
+                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="expiration_date" class="form-label">Expiration Date</label>
@@ -191,21 +200,6 @@
                         <div class="col-lg-6 mb-3">
                             <label for="renewal_window_open_date" class="form-label">Renewal Window Open Date</label>
                             <x-input name="renewal_window_open_date" type="date" value="{{ old('renewal_window_open_date', $license->renewal_window_open_date ? $license->renewal_window_open_date->format('Y-m-d') : '') }}" />
-                        </div>
-                        <div class="col-lg-6 mb-3">
-                            <label for="assigned_agent" class="form-label">Assigned Agent</label>
-                            <x-select name="assigned_agent" placeholder="Select Assigned Agent">
-                                @php
-                                    $agents = \App\Models\User::whereHas('Role', function ($query) {
-                                        $query->where('name', 'Agent');
-                                    })->get();
-                                @endphp
-                                @forelse($agents as $agent)
-                                    <option value="{{ $agent->id }}" {{ $license->assigned_agent_id == $agent->id ? 'selected' : '' }}>{{ $agent->name }}</option>
-                                @empty
-                                    <option disabled>No agents found</option>
-                                @endforelse
-                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="renewal_status" class="form-label">Renewal Status</label>
@@ -245,7 +239,7 @@
         </div>
 
         <div class="my-3 d-flex justify-content-end gap-2">
-            <x-button href="{{ route('admin.licenses.index') }}" variant="secondary">Cancel</x-button>
+            <x-button href="{{ route('admin.licenses.index') }}" variant="primary" icon="bi bi-arrow-left">Cancel</x-button>
             <x-button type="submit" variant="gold" icon="bi bi-save">Update License</x-button>
         </div>
     </form>

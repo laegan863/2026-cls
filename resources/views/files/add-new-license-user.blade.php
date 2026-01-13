@@ -193,52 +193,33 @@
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="agency_name" class="form-label">Agency Name</label>
-                        <x-input name="agency_name" type="text" placeholder="Enter agency name" required/>
+                        @php
+                            $agencies = \App\Models\Agency::where('is_active', true)->orderBy('name')->get();
+                        @endphp
+                        <x-select name="agency_name" placeholder="Select Agency" required>
+                            @forelse ($agencies as $agency)
+                                <option value="{{ $agency->name }}">{{ $agency->name }}</option>
+                            @empty
+                                <option value="" disabled>No agencies available</option>
+                            @endforelse
+                        </x-select>
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="expiration_date" class="form-label">Expiration Date</label>
                         <x-input name="expiration_date" type="date" placeholder="Select expiration date" required/>
                     </div>
-                    {{-- <div class="col-lg-6 mb-3">
-                        <label for="renewal_window_open_date" class="form-label">Renewal Window Open Date</label>
-                        <x-input name="renewal_window_open_date" type="date" placeholder="Select renewal window open date" />
-                    </div> --}}
-                    {{-- <div class="col-lg-6 mb-3">
+                    @if(Auth::user()->Role->name != "Client")
+                    <div class="col-lg-6 mb-3">
                         <label for="assigned_agent" class="form-label">Assigned Agent</label>
                         <x-select name="assigned_agent" placeholder="Select Assigned Agent">
-                            <option value="agent_1">Agent 1</option>
-                            <option value="agent_2">Agent 2</option>
-                            <option value="agent_3">Agent 3</option>
+                            <option value="">-- Select Agent (Optional) --</option>
+                            @foreach($agents ?? [] as $agent)
+                                <option value="{{ $agent->id }}">{{ $agent->name }}</option>
+                            @endforeach
                         </x-select>
+                        <small class="text-muted">Agent will be auto-assigned when processing payment</small>
                     </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="renewal_status" class="form-label">Renewal Status</label>
-                        <x-select name="renewal_status" placeholder="Select Renewal Status">
-                            <option value="monitoring">Monitoring (Active)</option>
-                            <option value="billing_window_open">Billing Window Open</option>
-                            <option value="pending_payment">Pending Payment</option>
-                            <option value="ready_to_submit">Ready to Submit</option>
-                            <option value="submitted">Submitted</option>
-                            <option value="waiting_agency_response">Waiting Agency Response</option>
-                            <option value="additional_info_requested">Additional Info Requested</option>
-                            <option value="pending_client_response">Pending Client Response</option>
-                            <option value="resubmitted">Resubmitted</option>
-                            <option value="approved_completed">Approved / Completed</option>
-                            <option value="failed_closed">Failed / Closed</option>
-                        </x-select>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="billing_status" class="form-label">Billing Status</label>
-                        <x-select name="billing_status" placeholder="Select Billing Status">
-                            <option value="not_invoiced">Not Invoiced</option>
-                            <option value="invoiced">Invoiced</option>
-                            <option value="payment_pending">Payment Pending</option>
-                            <option value="paid_online">Paid (Online)</option>
-                            <option value="paid_offline">Paid (Offline)</option>
-                            <option value="override_approved">Override Approved</option>
-                            <option value="voided">Voided</option>
-                        </x-select>
-                    </div> --}}
+                    @endif
                     <div class="col-lg-6 mb-3">
                         <label class="form-label" for="submission_confirmation_number">Submission Confirmation Number</label>
                         <x-input type="text" name="submission_confirmation_number" placeholder="Enter Submission Confirmation Number" required />
@@ -259,7 +240,7 @@
                     <div class="content-card-body p-3">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <h6 class="card-title mb-0 requirement-title">Requirement #1</h6>
-                            <button type="button" class="btn btn-danger btn-sm remove-btn">
+                            <button type="button" class="btn btn-danger-custom btn-sm remove-btn">
                                 <i class="bi bi-trash"></i> Remove
                             </button>
                         </div>
@@ -291,14 +272,14 @@
             </div>
             
             <div class="d-flex gap-2 mt-3">
-                <x-button type="button" variant="secondary" onclick="addField()" icon="bi bi-plus-lg">Add Another</x-button>
+                <x-button type="button" variant="primary" onclick="addField()" icon="bi bi-plus-lg">Add Another</x-button>
             </div>
         </x-card>
     </div>
     @endif
 
     <div class="my-3 d-flex justify-content-end gap-2">
-        <x-button href="{{ route('admin.licenses.index') }}" variant="secondary">Cancel</x-button>
+        <x-button href="{{ route('admin.licenses.index') }}" variant="primary">Cancel</x-button>
         <x-button type="submit" variant="gold" icon="bi bi-save">Save License</x-button>
     </div>
 
