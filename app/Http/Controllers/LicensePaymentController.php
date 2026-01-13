@@ -393,29 +393,18 @@ class LicensePaymentController extends Controller
     }
 
     /**
-     * Notify all admins and the assigned agent about payment completion
+     * Notify all admins and agents about payment completion
      */
     private function notifyAdminsAndAgent(License $license, LicensePayment $payment): void
     {
-        // Get all admins
-        $admins = User::whereHas('Role', function($query) {
-            $query->where('name', 'Admin');
-        })->get();
+        // Get all admins and agents
+        $staffUsers = User::whereHas('Role', function($query) {
+            $query->whereIn('name', ['Admin', 'Agent']);
+        })->where('id', '!=', Auth::id())->get();
 
-        // Notify all admins
-        foreach ($admins as $admin) {
-            // Don't notify the current user if they are an admin (they already know)
-            if ($admin->id !== Auth::id()) {
-                $admin->notify(new PaymentCompletedNotification($license, $payment));
-            }
-        }
-
-        // Notify assigned agent if exists and is not the current user
-        if ($license->assigned_agent_id && $license->assigned_agent_id !== Auth::id()) {
-            $agent = $license->assignedAgent;
-            if ($agent) {
-                $agent->notify(new PaymentCompletedNotification($license, $payment));
-            }
+        // Notify all admins and agents (except the current user)
+        foreach ($staffUsers as $user) {
+            $user->notify(new PaymentCompletedNotification($license, $payment));
         }
     }
 }

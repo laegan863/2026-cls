@@ -34,7 +34,7 @@ class LicenseCreatedNotification extends Notification
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('A new license application has been submitted.')
             ->line('Transaction ID: ' . $this->license->transaction_id)
-            ->line('License Type: ' . ($this->license->permitType->name ?? 'N/A'))
+            ->line('License Type: ' . ($this->license->permit_type ?? 'N/A'))
             ->line('Submitted by: ' . ($this->createdBy ? $this->createdBy->name : 'Client'))
             ->action('View License', route('admin.licenses.show', $this->license))
             ->line('Please review the application at your earliest convenience.');
@@ -46,7 +46,7 @@ class LicenseCreatedNotification extends Notification
             'type' => 'license_created',
             'license_id' => $this->license->id,
             'transaction_id' => $this->license->transaction_id,
-            'permit_type' => $this->license->permitType->name ?? 'N/A',
+            'permit_type' => $this->license->permit_type ?? 'N/A',
             'created_by' => $this->createdBy ? $this->createdBy->name : 'Client',
             'message' => 'New license application submitted: ' . $this->license->transaction_id,
             'url' => route('admin.licenses.show', $this->license),

@@ -19,21 +19,40 @@ class LicenseController extends Controller
     /**
      * Display a listing of the licenses.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
+        
+        // Check permission - user needs 'view' permission for Licensing module
+        if (!$user->hasPermission('view')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $role = $user->Role->name;
+        
+        // Build query
+        $query = License::with(['client', 'latestPayment.assignedAgent']);
         
         // Admin and Agent can see all licenses, Client can only see their own
-        // Note: assignedAgent is now an accessor that gets agent from latestPayment
-        if ($role === 'Admin' || $role === 'Agent') {
-            $licenses = License::with(['client', 'latestPayment.assignedAgent'])->latest()->get();
-        } else {
+        if ($role !== 'Admin' && $role !== 'Agent') {
             // Client - only show their own licenses
-            $licenses = License::with(['client', 'latestPayment.assignedAgent'])
-                ->where('client_id', Auth::id())
-                ->latest()
-                ->get();
+            $query->where('client_id', Auth::id());
         }
+        
+        // Apply filters
+        if ($request->filled('transaction_id')) {
+            $query->where('transaction_id', 'like', '%' . $request->transaction_id . '%');
+        }
+        
+        if ($request->filled('client_id') && ($role === 'Admin' || $role === 'Agent')) {
+            $query->where('client_id', $request->client_id);
+        }
+        
+        if ($request->filled('renewal_status')) {
+            $query->where('renewal_status', $request->renewal_status);
+        }
+        
+        $licenses = $query->latest()->get();
         
         return view('files.licensing', compact('licenses'));
     }
@@ -43,6 +62,13 @@ class LicenseController extends Controller
      */
     public function create()
     {
+        $user = Auth::user();
+        
+        // Check permission - user needs 'create' permission for Licensing module
+        if (!$user->hasPermission('create')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
         // Get agents (Admin and Agent roles) for assignment dropdown
         $agents = User::whereHas('Role', function ($query) {
             $query->whereIn('name', ['Agent', 'Admin']);
@@ -56,7 +82,14 @@ class LicenseController extends Controller
      */
     public function store(Request $request)
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
+        
+        // Check permission - user needs 'create' permission for Licensing module
+        if (!$user->hasPermission('create')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $role = $user->Role->name;
         
         $validated = $request->validate([
             'email' => 'nullable|email',
@@ -152,7 +185,14 @@ class LicenseController extends Controller
 
     public function show(License $license)
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
+        
+        // Check permission - user needs 'view' permission for Licensing module
+        if (!$user->hasPermission('view')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $role = $user->Role->name;
         
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
@@ -163,7 +203,14 @@ class LicenseController extends Controller
 
     public function edit(License $license)
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
+        
+        // Check permission - user needs 'edit' permission for Licensing module
+        if (!$user->hasPermission('edit')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $role = $user->Role->name;
         
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
@@ -174,7 +221,14 @@ class LicenseController extends Controller
 
     public function update(Request $request, License $license)
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
+        
+        // Check permission - user needs 'edit' permission for Licensing module
+        if (!$user->hasPermission('edit')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $role = $user->Role->name;
         
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
@@ -210,7 +264,14 @@ class LicenseController extends Controller
 
     public function destroy(License $license)
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
+        
+        // Check permission - user needs 'delete' permission for Licensing module
+        if (!$user->hasPermission('delete')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $role = $user->Role->name;
         
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
@@ -226,9 +287,10 @@ class LicenseController extends Controller
      */
     public function refreshStatus(License $license)
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
         
-        if (!in_array($role, ['Admin', 'Agent'])) {
+        // Only users with edit permission can refresh status
+        if (!$user->hasPermission('edit')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -248,9 +310,10 @@ class LicenseController extends Controller
      */
     public function bulkRefreshStatus()
     {
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
         
-        if (!in_array($role, ['Admin', 'Agent'])) {
+        // Only users with edit permission can bulk refresh
+        if (!$user->hasPermission('edit')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -406,22 +469,14 @@ class LicenseController extends Controller
      */
     protected function notifyLicenseCreated(License $license): void
     {
-        // Get all admins to notify
-        $admins = User::whereHas('Role', function($query) {
-            $query->where('name', 'Admin');
-        })->get();
+        // Get all admins and agents to notify
+        $staffUsers = User::whereHas('Role', function($query) {
+            $query->whereIn('name', ['Admin', 'Agent']);
+        })->where('id', '!=', Auth::id())->get();
 
-        // Notify admins
-        foreach ($admins as $admin) {
-            $admin->notify(new LicenseCreatedNotification($license, Auth::user()));
-        }
-
-        // Notify assigned agent if different from creator
-        if ($license->assigned_agent_id && $license->assigned_agent_id != Auth::id()) {
-            $agent = $license->assignedAgent;
-            if ($agent) {
-                $agent->notify(new LicenseCreatedNotification($license, Auth::user()));
-            }
+        // Notify admins and agents (except the creator)
+        foreach ($staffUsers as $user) {
+            $user->notify(new LicenseCreatedNotification($license, Auth::user()));
         }
 
         // Notify client if created by admin/agent on their behalf

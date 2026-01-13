@@ -23,7 +23,11 @@
 
                     <div class="mb-3">
                         <label for="module" class="form-label">Module</label>
-                        <x-input name="module" placeholder="e.g., Users, Reports, Settings" value="{{ old('module') }}" />
+                        @php
+                            $modules = \App\Models\Module::where('is_active', true)->get();
+                        @endphp
+                        <x-select name="module" :options="$modules->pluck('name', 'name')->toArray()" placeholder="Select Module" :selected="old('module')" />
+                        {{-- <x-input name="module" placeholder="e.g., Users, Reports, Settings" value="{{ old('module') }}" /> --}}
                         <small class="text-muted">Group permissions by module for easier management.</small>
                         @error('module')
                             <div class="text-danger small mt-1">{{ $message }}</div>
