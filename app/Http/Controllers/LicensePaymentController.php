@@ -81,6 +81,7 @@ class LicensePaymentController extends Controller
         // Create payment
         $payment = $license->payments()->create([
             'created_by' => Auth::id(),
+            'assigned_agent_id' => Auth::id(), // Assign the agent who created this payment
             'status' => LicensePayment::STATUS_DRAFT,
             'notes' => $validated['notes'] ?? null,
         ]);
@@ -133,6 +134,11 @@ class LicensePaymentController extends Controller
             'amount' => $validated['amount'],
             'sort_order' => $payment->items()->count(),
         ]);
+        
+        // Assign the current agent/admin if payment has no assigned agent yet
+        if (empty($payment->assigned_agent_id)) {
+            $payment->update(['assigned_agent_id' => Auth::id()]);
+        }
 
         return back()->with('success', 'Item added successfully.');
     }
@@ -149,6 +155,11 @@ class LicensePaymentController extends Controller
         }
 
         $item->delete();
+        
+        // Assign the current agent/admin if payment has no assigned agent yet
+        if (empty($payment->assigned_agent_id)) {
+            $payment->update(['assigned_agent_id' => Auth::id()]);
+        }
 
         return back()->with('success', 'Item removed successfully.');
     }

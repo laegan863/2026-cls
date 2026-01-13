@@ -2,420 +2,494 @@
 
 @section('title', 'Dashboard')
 
+@push('styles')
+<style>
+    .chart-container {
+        position: relative;
+        height: 200px;
+    }
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+</style>
+@endpush
+
 @section('content')
     <!-- Page Header -->
-    <x-page-header title="Dashboard" subtitle="Welcome back, John! Here's what's happening today.">
-        <x-button variant="outline" icon="bi bi-download">Export</x-button>
-        <x-button variant="gold" icon="bi bi-plus-lg">New Report</x-button>
+    <x-page-header title="Dashboard" subtitle="Welcome back! Here's your renewal queue overview.">
+        <form action="{{ route('admin.licenses.bulk-refresh') }}" method="POST" class="d-inline">
+            @csrf
+            <x-button type="submit" variant="outline" icon="bi bi-arrow-clockwise">Refresh All Status</x-button>
+        </form>
     </x-page-header>
 
-    <x-card title="Modals" icon="fas fa-window-restore" class="mb-4">
-        <div class="d-flex flex-wrap gap-2">
-            <x-modal-trigger target="basicModal" variant="primary">Basic Modal</x-modal-trigger>
-            <x-modal-trigger target="centeredModal" variant="gold">Centered Modal</x-modal-trigger>
-            <x-modal-trigger target="largeModal" variant="outline">Large Modal</x-modal-trigger>
-            <x-modal-trigger target="formModal" variant="outline" icon="fas fa-edit">Form Modal</x-modal-trigger>
-            <x-modal-trigger target="successAlert" variant="success">Success Alert</x-modal-trigger>
-            <x-modal-trigger target="dangerAlert" variant="danger">Danger Alert</x-modal-trigger>
+    <!-- Stats Overview Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-xl-4">
+            <x-stats-card 
+                title="Overdue" 
+                value="{{ $dueDateStats['overdue'] ?? 0 }}" 
+                icon="bi bi-exclamation-triangle"
+                :change="($dueDateStats['overdue'] ?? 0) > 0 ? 'Action required' : 'None overdue'"
+                :trend="($dueDateStats['overdue'] ?? 0) > 0 ? 'down' : 'up'"
+            />
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-4">
+            <x-stats-card 
+                title="Active Licenses" 
+                value="{{ $dueDateStats['active'] ?? 0 }}" 
+                icon="bi bi-check-circle"
+                change="In good standing"
+                trend="up"
+            />
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-4">
+            <x-stats-card 
+                title="Renewal Open" 
+                value="{{ $renewalStatusStats['open'] ?? 0 }}" 
+                icon="bi bi-arrow-repeat"
+                change="In renewal window"
+                trend="neutral"
+            />
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Renewal Status Chart -->
+        <div class="col-12 col-md-4">
+            <x-card title="Renewal Status" icon="bi bi-pie-chart">
+                <div class="chart-container">
+                    <canvas id="renewalStatusChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><span class="badge bg-warning me-2">&nbsp;</span> Open</span>
+                        <strong>{{ $renewalStatusStats['open'] ?? 0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><span class="badge bg-secondary me-2">&nbsp;</span> Closed</span>
+                        <strong>{{ $renewalStatusStats['closed'] ?? 0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><span class="badge bg-danger me-2">&nbsp;</span> Expired</span>
+                        <strong>{{ $renewalStatusStats['expired'] ?? 0 }}</strong>
+                    </div>
+                </div>
+            </x-card>
         </div>
 
-        <!-- Basic Modal -->
-        <x-modal id="basicModal" title="Basic Modal">
-            <p>This is a basic modal dialog. You can put any content here.</p>
-            <p class="mb-0">Use the <code>&lt;x-modal&gt;</code> component to create modals easily.</p>
-            
-            <x-slot:footer>
-                <x-button variant="outline" data-bs-dismiss="modal">Close</x-button>
-                <x-button variant="primary">Save Changes</x-button>
-            </x-slot:footer>
-        </x-modal>
+        <!-- Billing Status Chart -->
+        <div class="col-12 col-md-4">
+            <x-card title="Billing Status" icon="bi bi-credit-card">
+                <div class="chart-container">
+                    <canvas id="billingStatusChart"></canvas>
+                </div>
+                <div class="mt-3 small">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Paid</span>
+                                <strong class="text-success">{{ $billingStatusStats['paid'] ?? 0 }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Open</span>
+                                <strong class="text-warning">{{ $billingStatusStats['open'] ?? 0 }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Pending</span>
+                                <strong class="text-info">{{ $billingStatusStats['pending'] ?? 0 }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Invoiced</span>
+                                <strong>{{ $billingStatusStats['invoiced'] ?? 0 }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Overridden</span>
+                                <strong class="text-muted">{{ $billingStatusStats['overridden'] ?? 0 }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Closed</span>
+                                <strong class="text-secondary">{{ $billingStatusStats['closed'] ?? 0 }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </x-card>
+        </div>
 
-        <!-- Centered Modal -->
-        <x-modal id="centeredModal" title="Centered Modal" centered>
-            <p>This modal is vertically centered on the page.</p>
-            <p class="mb-0">Add the <code>centered</code> prop to center the modal.</p>
-            
-            <x-slot:footer>
-                <x-button variant="gold">Got it!</x-button>
-            </x-slot:footer>
-        </x-modal>
+        <!-- Due Date Distribution Chart -->
+        <div class="col-12 col-md-4">
+            <x-card title="Due Date Distribution" icon="bi bi-calendar3">
+                <div class="chart-container">
+                    <canvas id="dueDateChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><span class="badge bg-danger me-2">&nbsp;</span> Overdue</span>
+                        <strong>{{ $dueDateStats['overdue'] ?? 0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><span class="badge bg-warning me-2">&nbsp;</span> This Week</span>
+                        <strong>{{ $dueDateStats['due_this_week'] ?? 0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><span class="badge bg-info me-2">&nbsp;</span> This Month</span>
+                        <strong>{{ $dueDateStats['due_this_month'] ?? 0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><span class="badge bg-success me-2">&nbsp;</span> Active (>2 months)</span>
+                        <strong>{{ $dueDateStats['active'] ?? 0 }}</strong>
+                    </div>
+                </div>
+            </x-card>
+        </div>
+    </div>
 
-        <!-- Large Modal -->
-        <x-modal id="largeModal" title="Large Modal" size="lg">
-            <p>This is a large modal with more space for content.</p>
-            <p>You can use size="sm", "lg", "xl", or "fullscreen".</p>
-            
-            <x-slot:footer>
-                <x-button variant="outline" data-bs-dismiss="modal">Cancel</x-button>
-                <x-button variant="primary">Continue</x-button>
-            </x-slot:footer>
-        </x-modal>
+    <!-- Renewal Queue Table -->
+    <x-card title="Payment / Renewal Queue" icon="bi bi-list-check" :padding="false" class="mb-4">
+        <x-slot:actions>
+            <x-button type="button" variant="outline" size="sm" icon="bi bi-funnel" data-bs-toggle="collapse" data-bs-target="#filterSection">
+                Filters
+            </x-button>
+        </x-slot:actions>
 
-        <!-- Form Modal -->
-        <x-modal id="formModal" title="Contact Form" centered>
-            <form>
-                <x-field label="Name" name="modal_name" required>
-                    <x-input name="modal_name" placeholder="Your name" />
-                </x-field>
-                
-                <x-field label="Email" name="modal_email" required>
-                    <x-input name="modal_email" type="email" placeholder="your@email.com" />
-                </x-field>
-                
-                <x-field label="Message" name="modal_message">
-                    <x-textarea name="modal_message" placeholder="Your message..." rows="3" />
-                </x-field>
+        <!-- Filter Section -->
+        <div class="collapse p-3 border-bottom" id="filterSection">
+            <form action="{{ route('admin.dashboard') }}" method="GET">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Expiration From</label>
+                        <x-input type="date" name="expiration_from" :value="request('expiration_from')" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Expiration To</label>
+                        <x-input type="date" name="expiration_to" :value="request('expiration_to')" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Client</label>
+                        <x-select name="client_id">
+                            <option value="">All Clients</option>
+                            @foreach($clients ?? [] as $client)
+                                <option value="{{ $client->id }}" {{ request('client_id') == $client->id ? 'selected' : '' }}>
+                                    {{ $client->name }}
+                                </option>
+                            @endforeach
+                        </x-select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Permit Type</label>
+                        <x-select name="permit_type">
+                            <option value="">All Types</option>
+                            @foreach($permitTypes ?? [] as $type)
+                                <option value="{{ $type->permit_type }}" {{ request('permit_type') == $type->permit_type ? 'selected' : '' }}>
+                                    {{ $type->permit_type }}
+                                </option>
+                            @endforeach
+                        </x-select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Permit Subtype</label>
+                        <x-select name="permit_subtype">
+                            <option value="">All Subtypes</option>
+                            @foreach($permitSubTypes ?? [] as $subtype)
+                                <option value="{{ $subtype->name }}" {{ request('permit_subtype') == $subtype->name ? 'selected' : '' }}>
+                                    {{ $subtype->name }}
+                                </option>
+                            @endforeach
+                        </x-select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Payment Status</label>
+                        <x-select name="payment_status">
+                            <option value="">All Status</option>
+                            <option value="draft" {{ request('payment_status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="open" {{ request('payment_status') == 'open' ? 'selected' : '' }}>Open</option>
+                            <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }}>Paid</option>
+                            <option value="cancelled" {{ request('payment_status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                            <option value="overridden" {{ request('payment_status') == 'overridden' ? 'selected' : '' }}>Overridden</option>
+                        </x-select>
+                    </div>
+                    @if(Auth::user()->Role->name === 'Admin')
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Assigned Agent</label>
+                            <x-select name="assigned_agent_id">
+                                <option value="">All Agents</option>
+                                @foreach($agents ?? [] as $agent)
+                                    <option value="{{ $agent->id }}" {{ request('assigned_agent_id') == $agent->id ? 'selected' : '' }}>
+                                        {{ $agent->name }}
+                                    </option>
+                                @endforeach
+                            </x-select>
+                        </div>
+                    @endif
+                    <div class="col-12">
+                        <x-button type="submit" variant="primary" icon="bi bi-search">Apply Filters</x-button>
+                        <x-button href="{{ route('admin.dashboard') }}" variant="outline">Clear Filters</x-button>
+                    </div>
+                </div>
             </form>
-            
-            <x-slot:footer>
-                <x-button variant="outline" data-bs-dismiss="modal">Cancel</x-button>
-                <x-button variant="gold" type="submit">Send Message</x-button>
-            </x-slot:footer>
-        </x-modal>
+        </div>
 
-        <!-- Alert Modals -->
-        <x-modal-alert id="successAlert" type="success" title="Success!" message="Your action was completed successfully." confirm="Continue" />
-        <x-modal-alert id="dangerAlert" type="danger" title="Delete Item?" message="Are you sure you want to delete this item? This action cannot be undone." confirm="Delete" cancel="Cancel" />
+        <!-- Table -->
+        <x-table>
+            <x-slot:head>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Client / Store</th>
+                    <th>Permit Type</th>
+                    <th>Amount</th>
+                    <th>Payment Status</th>
+                    <th>Handled By</th>
+                    <th>Created</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </x-slot:head>
+            
+            @forelse($renewalQueue ?? [] as $payment)
+                @php
+                    $license = $payment->license;
+                    $handledBy = $payment->assignedAgent ?? $payment->creator;
+                @endphp
+                <tr>
+                    <td>
+                        <a href="{{ route('admin.licenses.payments.show', $license) }}" class="fw-medium text-primary text-decoration-none">
+                            {{ $payment->invoice_number }}
+                        </a>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <x-avatar :name="$license->client->name ?? 'N/A'" size="sm" />
+                            <div>
+                                <div class="fw-medium">{{ $license->client->name ?? 'N/A' }}</div>
+                                <small class="text-muted">{{ $license->dba ?: $license->legal_name }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div>{{ $license->permit_type }}</div>
+                        @if($license->permit_subtype)
+                            <small class="text-muted">{{ $license->permit_subtype }}</small>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="fw-medium">${{ number_format($payment->total_amount, 2) }}</div>
+                    </td>
+                    <td>
+                        @switch($payment->status)
+                            @case('paid')
+                                <x-badge type="success">Paid</x-badge>
+                                @break
+                            @case('open')
+                                <x-badge type="warning">Open</x-badge>
+                                @break
+                            @case('draft')
+                                <x-badge type="info">Draft</x-badge>
+                                @break
+                            @case('overridden')
+                                <x-badge type="dark">Overridden</x-badge>
+                                @break
+                            @case('cancelled')
+                                <x-badge type="danger">Cancelled</x-badge>
+                                @break
+                            @default
+                                <x-badge type="secondary">{{ ucfirst($payment->status) }}</x-badge>
+                        @endswitch
+                    </td>
+                    <td>
+                        @if($handledBy)
+                            <div class="d-flex align-items-center gap-2">
+                                <x-avatar :name="$handledBy->name" size="sm" variant="gold" />
+                                <span>{{ $handledBy->name }}</span>
+                            </div>
+                        @else
+                            <span class="text-muted">Unassigned</span>
+                        @endif
+                    </td>
+                    <td>
+                        <div class="fw-medium">{{ $payment->created_at->format('M d, Y') }}</div>
+                        <small class="text-muted">{{ $payment->created_at->diffForHumans() }}</small>
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex gap-1 justify-content-center">
+                            <x-button href="{{ route('admin.licenses.show', $license) }}" variant="outline-primary" size="sm" icon="bi bi-eye" title="View License"></x-button>
+                            <x-button href="{{ route('admin.licenses.payments.show', $license) }}" variant="outline-success" size="sm" icon="bi bi-credit-card" title="Payment"></x-button>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                        <p class="text-muted mb-0">No payments found in the renewal queue.</p>
+                    </td>
+                </tr>
+            @endforelse
+        </x-table>
+
+        @if(isset($renewalQueue) && $renewalQueue->hasPages())
+            <div class="p-3 border-top">
+                {{ $renewalQueue->withQueryString()->links() }}
+            </div>
+        @endif
     </x-card>
 
-    <!-- Stats Cards Row -->
-    <div class="row g-4 mb-4">
-        <div class="col-12 col-sm-6 col-xl-3">
-            <x-stats-card 
-                title="Total Revenue" 
-                value="$48,592" 
-                icon="bi bi-currency-dollar"
-                change="+12.5%"
-                trend="up"
-            />
-        </div>
-        
-        <div class="col-12 col-sm-6 col-xl-3">
-            <x-stats-card 
-                title="Total Orders" 
-                value="1,284" 
-                icon="bi bi-cart-check"
-                change="+8.2%"
-                trend="up"
-            />
-        </div>
-        
-        <div class="col-12 col-sm-6 col-xl-3">
-            <x-stats-card 
-                title="Total Customers" 
-                value="5,842" 
-                icon="bi bi-people"
-                change="+24.1%"
-                trend="up"
-            />
-        </div>
-        
-        <div class="col-12 col-sm-6 col-xl-3">
-            <x-stats-card 
-                title="Conversion Rate" 
-                value="94.2%" 
-                icon="bi bi-graph-up-arrow"
-                change="-2.4%"
-                trend="down"
-            />
-        </div>
-    </div>
-
-    <!-- Charts & Activity Row -->
-    <div class="row g-4 mb-4">
-        <!-- Revenue Chart -->
-        <div class="col-12 col-xl-8">
-            <x-card title="Revenue Overview">
-                <x-slot:actions>
-                    <x-button-group>
-                        <x-button variant="outline" size="sm">Weekly</x-button>
-                        <x-button variant="outline" size="sm">Monthly</x-button>
-                        <x-button variant="outline" size="sm">Yearly</x-button>
-                    </x-button-group>
-                </x-slot:actions>
-                
-                <div class="chart-placeholder">
-                    <div class="text-center">
-                        <x-icon name="bi bi-bar-chart-line" size="2xl" variant="muted" />
-                        <p class="mt-2 mb-0">Chart will be rendered here</p>
-                        <p class="small text-muted">Integrate with Chart.js or ApexCharts</p>
-                    </div>
+    <!-- Workflow Status Overview -->
+    <x-card title="Workflow Status Overview" icon="bi bi-diagram-3" class="mb-4">
+        <div class="row g-3">
+            <div class="col-6 col-md-4">
+                <div class="text-center p-3 rounded stat-card" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);">
+                    <div class="fs-3 fw-bold text-warning">{{ $workflowStatusStats['pending_validation'] ?? 0 }}</div>
+                    <small class="text-muted">Pending Validation</small>
                 </div>
-            </x-card>
-        </div>
-        
-        <!-- Recent Activity -->
-        <div class="col-12 col-xl-4">
-            <x-card title="Recent Activity" class="h-100">
-                <x-slot:actions>
-                    <x-button variant="outline" size="sm">View All</x-button>
-                </x-slot:actions>
-                
-                <x-activity-item 
-                    icon="bi bi-cart-plus" 
-                    variant="blue" 
-                    title="New order received" 
-                    time="Order #1234 - 5 minutes ago"
-                />
-                
-                <x-activity-item 
-                    icon="bi bi-person-plus" 
-                    variant="gold" 
-                    title="New customer registered" 
-                    time="Sarah Johnson - 15 minutes ago"
-                />
-                
-                <x-activity-item 
-                    icon="bi bi-check-circle" 
-                    variant="green" 
-                    title="Payment confirmed" 
-                    time="Order #1230 - 32 minutes ago"
-                />
-                
-                <x-activity-item 
-                    icon="bi bi-box-seam" 
-                    variant="blue" 
-                    title="Product shipped" 
-                    time="Order #1228 - 1 hour ago"
-                />
-                
-                <x-activity-item 
-                    icon="bi bi-star-fill" 
-                    variant="gold" 
-                    title="New 5-star review" 
-                    time="Product: Premium Widget - 2 hours ago"
-                />
-            </x-card>
-        </div>
-    </div>
-
-    <!-- Projects & Orders Row -->
-    <div class="row g-4 mb-4">
-        <!-- Active Projects -->
-        <div class="col-12 col-xl-4">
-            <x-card title="Active Projects">
-                <x-slot:actions>
-                    <x-icon-button icon="bi bi-plus-lg" variant="outline" size="sm" />
-                </x-slot:actions>
-                
-                <!-- Project Item 1 -->
-                <div class="mb-4">
-                    <x-progress value="75" label="Website Redesign" show-value class="mb-2" />
-                    <div class="d-flex justify-content-between align-items-center">
-                        <x-avatar-group>
-                            <x-avatar name="JD" size="sm" />
-                            <x-avatar name="SA" size="sm" variant="gold" />
-                            <x-avatar name="MK" size="sm" variant="light" />
-                        </x-avatar-group>
-                        <small class="text-muted">Due in 5 days</small>
-                    </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-center p-3 rounded stat-card" style="background: linear-gradient(135deg, #cce5ff 0%, #b8daff 100%);">
+                    <div class="fs-3 fw-bold text-info">{{ $workflowStatusStats['requirements_pending'] ?? 0 }}</div>
+                    <small class="text-muted">Requirements Pending</small>
                 </div>
-                
-                <!-- Project Item 2 -->
-                <div class="mb-4">
-                    <x-progress value="45" variant="gold" label="Mobile App Development" show-value class="mb-2" />
-                    <div class="d-flex justify-content-between align-items-center">
-                        <x-avatar-group>
-                            <x-avatar name="AB" size="sm" variant="gold" />
-                            <x-avatar name="CD" size="sm" />
-                        </x-avatar-group>
-                        <small class="text-muted">Due in 12 days</small>
-                    </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-center p-3 rounded stat-card" style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);">
+                    <div class="fs-3 fw-bold text-success">{{ $workflowStatusStats['approved'] ?? 0 }}</div>
+                    <small class="text-muted">Approved</small>
                 </div>
-                
-                <!-- Project Item 3 -->
-                <div>
-                    <x-progress value="92" label="Marketing Campaign" show-value class="mb-2" />
-                    <div class="d-flex justify-content-between align-items-center">
-                        <x-avatar-group :max="3" :total="5">
-                            <x-avatar name="EF" size="sm" variant="light" />
-                            <x-avatar name="GH" size="sm" />
-                            <x-avatar name="IJ" size="sm" variant="gold" />
-                        </x-avatar-group>
-                        <small class="text-muted">Due in 2 days</small>
-                    </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-center p-3 rounded stat-card" style="background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%);">
+                    <div class="fs-3 fw-bold text-secondary">{{ $workflowStatusStats['active'] ?? 0 }}</div>
+                    <small class="text-muted">Active</small>
                 </div>
-            </x-card>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-center p-3 rounded stat-card" style="background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);">
+                    <div class="fs-3 fw-bold text-primary">{{ $workflowStatusStats['payment_pending'] ?? 0 }}</div>
+                    <small class="text-muted">Payment Pending</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="text-center p-3 rounded stat-card" style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);">
+                    <div class="fs-3 fw-bold text-danger">{{ ($workflowStatusStats['rejected'] ?? 0) + ($workflowStatusStats['expired'] ?? 0) }}</div>
+                    <small class="text-muted">Rejected/Expired</small>
+                </div>
+            </div>
         </div>
-        
-        <!-- Recent Orders Table -->
-        <div class="col-12 col-xl-8">
-            <x-card title="Recent Orders" :padding="false">
-                <x-slot:actions>
-                    <x-button variant="outline" size="sm">View All Orders</x-button>
-                </x-slot:actions>
-                
-                <x-table>
-                    <x-slot:head>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Product</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                        </tr>
-                    </x-slot:head>
-                    
-                    <tr>
-                        <td><span class="fw-medium">#ORD-1234</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <x-avatar name="Emma Wilson" size="sm" />
-                                <span>Emma Wilson</span>
-                            </div>
-                        </td>
-                        <td>Premium Package</td>
-                        <td><span class="fw-semibold">$299.00</span></td>
-                        <td><x-status status="completed" /></td>
-                        <td>Jan 6, 2026</td>
-                    </tr>
-                    <tr>
-                        <td><span class="fw-medium">#ORD-1233</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <x-avatar name="James Carter" size="sm" variant="gold" />
-                                <span>James Carter</span>
-                            </div>
-                        </td>
-                        <td>Basic Plan</td>
-                        <td><span class="fw-semibold">$99.00</span></td>
-                        <td><x-status status="processing" /></td>
-                        <td>Jan 6, 2026</td>
-                    </tr>
-                    <tr>
-                        <td><span class="fw-medium">#ORD-1232</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <x-avatar name="Sarah Johnson" size="sm" variant="light" />
-                                <span>Sarah Johnson</span>
-                            </div>
-                        </td>
-                        <td>Enterprise Suite</td>
-                        <td><span class="fw-semibold">$599.00</span></td>
-                        <td><x-status status="completed" /></td>
-                        <td>Jan 5, 2026</td>
-                    </tr>
-                    <tr>
-                        <td><span class="fw-medium">#ORD-1231</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <x-avatar name="Michael Brown" size="sm" />
-                                <span>Michael Brown</span>
-                            </div>
-                        </td>
-                        <td>Starter Kit</td>
-                        <td><span class="fw-semibold">$49.00</span></td>
-                        <td><x-status status="cancelled" /></td>
-                        <td>Jan 5, 2026</td>
-                    </tr>
-                    <tr>
-                        <td><span class="fw-medium">#ORD-1230</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <x-avatar name="Lisa Davis" size="sm" variant="gold" />
-                                <span>Lisa Davis</span>
-                            </div>
-                        </td>
-                        <td>Premium Package</td>
-                        <td><span class="fw-semibold">$299.00</span></td>
-                        <td><x-status status="pending" /></td>
-                        <td>Jan 4, 2026</td>
-                    </tr>
-                </x-table>
-            </x-card>
-        </div>
-    </div>
-
-    <!-- Quick Stats Row -->
-    <div class="row g-4">
-        <!-- Top Products -->
-        <div class="col-12 col-md-6 col-xl-4">
-            <x-card title="Top Products">
-                <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
-                    <div class="d-flex align-items-center gap-3">
-                        <x-icon name="bi bi-box" variant="primary" background />
-                        <div>
-                            <div class="fw-medium" style="color: var(--bs-primary);">Premium Widget</div>
-                            <small class="text-muted">Electronics</small>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-semibold">$12,450</div>
-                        <small class="text-success"><i class="bi bi-arrow-up"></i> 15%</small>
-                    </div>
-                </div>
-                
-                <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
-                    <div class="d-flex align-items-center gap-3">
-                        <x-icon name="bi bi-laptop" variant="gold" background />
-                        <div>
-                            <div class="fw-medium" style="color: var(--bs-primary);">Pro Laptop Stand</div>
-                            <small class="text-muted">Accessories</small>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-semibold">$8,920</div>
-                        <small class="text-success"><i class="bi bi-arrow-up"></i> 8%</small>
-                    </div>
-                </div>
-                
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <x-icon name="bi bi-headphones" variant="primary" background />
-                        <div>
-                            <div class="fw-medium" style="color: var(--bs-primary);">Wireless Headset</div>
-                            <small class="text-muted">Audio</small>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-semibold">$6,340</div>
-                        <small class="text-danger"><i class="bi bi-arrow-down"></i> 3%</small>
-                    </div>
-                </div>
-            </x-card>
-        </div>
-        
-        <!-- Traffic Sources -->
-        <div class="col-12 col-md-6 col-xl-4">
-            <x-card title="Traffic Sources">
-                <x-progress value="45" label="Direct" show-value class="mb-3" />
-                <x-progress value="30" variant="gold" label="Organic Search" show-value class="mb-3" />
-                <x-progress value="15" label="Social Media" show-value class="mb-3" />
-                <x-progress value="10" variant="gold" label="Referral" show-value />
-            </x-card>
-        </div>
-        
-        <!-- Quick Actions -->
-        <div class="col-12 col-xl-4">
-            <x-card title="Quick Actions">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <x-button variant="primary" block class="py-3">
-                            <i class="bi bi-plus-circle d-block mb-1 fs-5"></i>
-                            <span class="small">Add Product</span>
-                        </x-button>
-                    </div>
-                    <div class="col-6">
-                        <x-button variant="gold" block class="py-3">
-                            <i class="bi bi-receipt d-block mb-1 fs-5"></i>
-                            <span class="small">New Invoice</span>
-                        </x-button>
-                    </div>
-                    <div class="col-6">
-                        <x-button variant="outline" block class="py-3">
-                            <i class="bi bi-person-plus d-block mb-1 fs-5"></i>
-                            <span class="small">Add Customer</span>
-                        </x-button>
-                    </div>
-                    <div class="col-6">
-                        <x-button variant="outline" block class="py-3">
-                            <i class="bi bi-file-earmark-text d-block mb-1 fs-5"></i>
-                            <span class="small">Create Report</span>
-                        </x-button>
-                    </div>
-                </div>
-            </x-card>
-        </div>
-    </div>
+    </x-card>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Renewal Status Chart
+    const renewalCtx = document.getElementById('renewalStatusChart');
+    if (renewalCtx) {
+        new Chart(renewalCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Open', 'Closed', 'Expired'],
+                datasets: [{
+                    data: [
+                        {{ $renewalStatusStats['open'] ?? 0 }},
+                        {{ $renewalStatusStats['closed'] ?? 0 }},
+                        {{ $renewalStatusStats['expired'] ?? 0 }}
+                    ],
+                    backgroundColor: ['#ffc107', '#6c757d', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    // Billing Status Chart
+    const billingCtx = document.getElementById('billingStatusChart');
+    if (billingCtx) {
+        new Chart(billingCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Paid', 'Open', 'Pending', 'Invoiced', 'Overridden', 'Closed'],
+                datasets: [{
+                    data: [
+                        {{ $billingStatusStats['paid'] ?? 0 }},
+                        {{ $billingStatusStats['open'] ?? 0 }},
+                        {{ $billingStatusStats['pending'] ?? 0 }},
+                        {{ $billingStatusStats['invoiced'] ?? 0 }},
+                        {{ $billingStatusStats['overridden'] ?? 0 }},
+                        {{ $billingStatusStats['closed'] ?? 0 }}
+                    ],
+                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#007bff', '#6c757d', '#adb5bd'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    // Due Date Chart
+    const dueDateCtx = document.getElementById('dueDateChart');
+    if (dueDateCtx) {
+        new Chart(dueDateCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Overdue', 'This Week', 'This Month', 'Active'],
+                datasets: [{
+                    label: 'Licenses',
+                    data: [
+                        {{ $dueDateStats['overdue'] ?? 0 }},
+                        {{ $dueDateStats['due_this_week'] ?? 0 }},
+                        {{ $dueDateStats['due_this_month'] ?? 0 }},
+                        {{ $dueDateStats['active'] ?? 0 }}
+                    ],
+                    backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+@endpush

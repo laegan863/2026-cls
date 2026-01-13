@@ -4,7 +4,7 @@
 
 @section('content')
     <x-page-header title="Create Payment" subtitle="Transaction ID: {{ $license->transaction_id }}">
-        <x-button href="{{ route('admin.licenses.show', $license) }}" variant="secondary" icon="bi bi-arrow-left">Back to License</x-button>
+        <x-button href="{{ route('admin.licenses.show', $license) }}" variant="primary" icon="bi bi-arrow-left">Back to License</x-button>
     </x-page-header>
 
     @if(session('error'))
@@ -35,13 +35,13 @@
                                 <x-input name="items[0][amount]" type="number" step="0.01" min="0.01" placeholder="0.00" required onchange="calculateTotal()" onkeyup="calculateTotal()" />
                             </div>
                             <div class="col-lg-2 d-flex align-items-end">
-                                <x-button type="button" variant="danger" onclick="removeItem(this)" icon="bi bi-trash"></x-button>
+                                <x-button type="button" variant="primary" onclick="removeItem(this)" icon="bi bi-trash"></x-button>
                             </div>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center border-top pt-3">
-                        <x-button type="button" variant="secondary" onclick="addItem()" icon="bi bi-plus-lg">Add Item</x-button>
+                        <x-button type="button" variant="primary" onclick="addItem()" icon="bi bi-plus-lg">Add Item</x-button>
                         
                         <div class="text-end">
                             <h4 class="mb-0">Total: $<span id="totalAmount">0.00</span></h4>
@@ -54,7 +54,7 @@
                     </div>
 
                     <div class="d-flex gap-2 justify-content-end mt-4">
-                        <x-button href="{{ route('admin.licenses.show', $license) }}" variant="secondary">Cancel</x-button>
+                        <x-button href="{{ route('admin.licenses.show', $license) }}" variant="primary">Cancel</x-button>
                         <x-button type="submit" variant="gold" icon="bi bi-send">Create & Send to Client</x-button>
                     </div>
                 </form>
@@ -119,7 +119,7 @@ function addItem() {
             <input type="number" name="items[${itemIndex}][amount]" class="form-control" step="0.01" min="0.01" placeholder="0.00" required onchange="calculateTotal()" onkeyup="calculateTotal()" />
         </div>
         <div class="col-lg-2 d-flex align-items-end">
-            <button type="button" class="btn btn-danger" onclick="removeItem(this)">
+            <button type="button" class="btn btn-danger-custom" onclick="removeItem(this)">
                 <i class="bi bi-trash"></i>
             </button>
         </div>

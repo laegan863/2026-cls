@@ -89,9 +89,7 @@
                                         <span class="text-danger small">(Coming Soon)</span>
                                     @endif
                                 </div>
-                                <a href="{{ route('admin.modules.show', $child) }}" class="btn btn-sm btn-outline-info">
-                                    <i class="bi bi-eye"></i>
-                                </a>
+                                <x-button href="{{ route('admin.modules.show', $child) }}" variant="outline-info" size="sm" icon="bi bi-eye"></x-button>
                             </li>
                         @endforeach
                     </ul>

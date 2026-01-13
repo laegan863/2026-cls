@@ -1,0 +1,47 @@
+@extends('layouts.index')
+
+@section('title', 'Create Agency')
+
+@section('content')
+    <x-page-header title="Create Agency" subtitle="Add a new government agency or regulatory body.">
+        <x-button href="{{ route('admin.agency.index') }}" variant="outline-secondary" icon="bi bi-arrow-left">Back to List</x-button>
+    </x-page-header>
+
+    @if($errors->any())
+        <x-alert type="danger" dismissible>
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </x-alert>
+    @endif
+
+    <div class="row">
+        <div class="col-lg-6">
+            <x-card title="Agency Information" icon="bi bi-building">
+                <form action="{{ route('admin.agency.store') }}" method="POST">
+                    @csrf
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Agency Name <span class="text-danger">*</span></label>
+                        <x-input name="name" type="text" placeholder="Enter agency name" value="{{ old('name') }}" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="is_active">Active</label>
+                        </div>
+                        <small class="text-muted">Inactive agencies will not appear in selection dropdowns.</small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <x-button type="submit" variant="gold" icon="bi bi-check-lg">Create Agency</x-button>
+                        <x-button href="{{ route('admin.agency.index') }}" variant="outline-secondary">Cancel</x-button>
+                    </div>
+                </form>
+            </x-card>
+        </div>
+    </div>
+@endsection

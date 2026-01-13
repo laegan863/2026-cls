@@ -81,9 +81,7 @@
                             </td>
                             <td>{{ $setting['description'] }}</td>
                             <td>
-                                <a href="{{ $setting['route'] }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye me-1"></i> Manage
-                                </a>
+                                <x-button href="{{ $setting['route'] }}" variant="outline-primary" size="sm" icon="bi bi-eye">Manage</x-button>
                             </td>
                         </tr>
                     @endforeach

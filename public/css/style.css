@@ -1066,6 +1066,235 @@ a {
     font-size: 1.25rem;
 }
 
+/* Custom Success Button */
+.btn-success-custom {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    color: var(--bs-white);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
+}
+
+.btn-success-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.35);
+    color: var(--bs-white);
+}
+
+/* Custom Danger Button */
+.btn-danger-custom {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c5e 100%);
+    border: none;
+    color: var(--bs-white);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.25);
+}
+
+.btn-danger-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.35);
+    color: var(--bs-white);
+}
+
+/* Custom Warning Button */
+.btn-warning-custom {
+    background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+    border: none;
+    color: #212529;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.25);
+}
+
+.btn-warning-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.35);
+    color: #212529;
+}
+
+/* Custom Info Button */
+.btn-info-custom {
+    background: linear-gradient(135deg, #17a2b8 0%, #3dc3d8 100%);
+    border: none;
+    color: var(--bs-white);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.25);
+}
+
+.btn-info-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(23, 162, 184, 0.35);
+    color: var(--bs-white);
+}
+
+/* Custom Light Button */
+.btn-light-custom {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: none;
+    color: var(--bs-gray-700);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.btn-light-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    color: var(--bs-gray-800);
+}
+
+/* Custom Dark Button */
+.btn-dark-custom {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+    border: none;
+    color: var(--bs-white);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(52, 58, 64, 0.25);
+}
+
+.btn-dark-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 58, 64, 0.35);
+    color: var(--bs-white);
+}
+
+/* Custom Secondary Button */
+.btn-secondary-custom {
+    background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
+    border: none;
+    color: var(--bs-white);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
+}
+
+.btn-secondary-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.35);
+    color: var(--bs-white);
+}
+
+/* Custom Outline Buttons */
+.btn-outline-primary-custom {
+    background: transparent;
+    border: 2px solid var(--bs-primary);
+    color: var(--bs-primary);
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+}
+
+.btn-outline-primary-custom:hover {
+    background: var(--bs-primary);
+    color: var(--bs-white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 43, 74, 0.25);
+}
+
+.btn-outline-success-custom {
+    background: transparent;
+    border: 2px solid #28a745;
+    color: #28a745;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+}
+
+.btn-outline-success-custom:hover {
+    background: #28a745;
+    color: var(--bs-white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
+}
+
+.btn-outline-danger-custom {
+    background: transparent;
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+}
+
+.btn-outline-danger-custom:hover {
+    background: #dc3545;
+    color: var(--bs-white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.25);
+}
+
+.btn-outline-warning-custom {
+    background: transparent;
+    border: 2px solid #ffc107;
+    color: #b38600;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+}
+
+.btn-outline-warning-custom:hover {
+    background: #ffc107;
+    color: #212529;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.25);
+}
+
+.btn-outline-info-custom {
+    background: transparent;
+    border: 2px solid #17a2b8;
+    color: #17a2b8;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+}
+
+.btn-outline-info-custom:hover {
+    background: #17a2b8;
+    color: var(--bs-white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.25);
+}
+
+.btn-outline-secondary-custom {
+    background: transparent;
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+}
+
+.btn-outline-secondary-custom:hover {
+    background: #6c757d;
+    color: var(--bs-white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
+}
+
 /* ============================================
    Table Styles
    ============================================ */

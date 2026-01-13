@@ -24,11 +24,12 @@ class LicenseController extends Controller
         $role = Auth::user()->Role->name;
         
         // Admin and Agent can see all licenses, Client can only see their own
+        // Note: assignedAgent is now an accessor that gets agent from latestPayment
         if ($role === 'Admin' || $role === 'Agent') {
-            $licenses = License::with(['client', 'assignedAgent'])->latest()->get();
+            $licenses = License::with(['client', 'latestPayment.assignedAgent'])->latest()->get();
         } else {
             // Client - only show their own licenses
-            $licenses = License::with(['client', 'assignedAgent'])
+            $licenses = License::with(['client', 'latestPayment.assignedAgent'])
                 ->where('client_id', Auth::id())
                 ->latest()
                 ->get();
@@ -42,7 +43,12 @@ class LicenseController extends Controller
      */
     public function create()
     {
-        return view('files.add-new-license-user');
+        // Get agents (Admin and Agent roles) for assignment dropdown
+        $agents = User::whereHas('Role', function ($query) {
+            $query->whereIn('name', ['Agent', 'Admin']);
+        })->orderBy('name')->get();
+        
+        return view('files.add-new-license-user', compact('agents'));
     }
 
     /**
@@ -89,14 +95,6 @@ class LicenseController extends Controller
             $validated['client_id'] = Auth::id();
         }
 
-        if ($request->filled('assigned_agent')) {
-            $agent = User::whereHas('Role', function ($query) {
-                $query->where('name', 'Agent');
-            })->where('id', $request->assigned_agent)->first();
-            
-            $validated['assigned_agent_id'] = $agent ? $agent->id : null;
-        }
-        
         unset($validated['assigned_agent']);
         // Remove requirements from validated data (they go to separate table)
         unset($validated['requirements']);
@@ -201,7 +199,6 @@ class LicenseController extends Controller
             'agency_name' => 'nullable|string',
             'expiration_date' => 'nullable|date',
             'renewal_window_open_date' => 'nullable|date',
-            'assigned_agent' => 'nullable|string',
             'renewal_status' => 'nullable|string',
             'billing_status' => 'nullable|string',
             'submission_confirmation_number' => 'nullable|string',
@@ -240,6 +237,84 @@ class LicenseController extends Controller
         return redirect()
             ->route('admin.licenses.show', $license)
             ->with('success', 'Renewal and billing status updated. Renewal: ' . $license->renewal_status_label . ', Billing: ' . $license->billing_status_label);
+    }
+
+    /**
+     * Bulk refresh renewal, billing and workflow status for all licenses.
+     * Updates based on expiration date:
+     * - Within 2 months of expiry: renewal = open, billing = pending, workflow = payment_pending
+     * - Expired: renewal = expired, billing = pending, workflow = expired
+     * - More than 2 months until expiry: renewal = closed, billing = closed, workflow = active (if approved)
+     */
+    public function bulkRefreshStatus()
+    {
+        $role = Auth::user()->Role->name;
+        
+        if (!in_array($role, ['Admin', 'Agent'])) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $licenses = License::whereNotNull('expiration_date')->get();
+        
+        $updated = 0;
+        $openedCount = 0;
+        $closedCount = 0;
+        $expiredCount = 0;
+
+        foreach ($licenses as $license) {
+            $oldRenewalStatus = $license->renewal_status;
+            $oldBillingStatus = $license->billing_status;
+            $oldWorkflowStatus = $license->workflow_status;
+            
+            // Update renewal and billing status based on expiration date
+            $license->updateRenewalBillingStatus();
+            
+            // Also update workflow status based on expiration date for approved/active licenses
+            if (in_array($oldWorkflowStatus, [
+                License::WORKFLOW_APPROVED,
+                License::WORKFLOW_ACTIVE,
+                License::WORKFLOW_PAYMENT_PENDING,
+                License::WORKFLOW_PAYMENT_COMPLETED,
+                License::WORKFLOW_COMPLETED,
+            ])) {
+                if ($license->hasExpired()) {
+                    $license->update(['workflow_status' => License::WORKFLOW_EXPIRED]);
+                } elseif ($license->isWithinRenewalWindow()) {
+                    // If within renewal window and billing is not yet paid, set to payment pending
+                    if (!in_array($license->billing_status, [License::BILLING_PAID, License::BILLING_OVERRIDDEN])) {
+                        $license->update(['workflow_status' => License::WORKFLOW_PAYMENT_PENDING]);
+                    }
+                } elseif ($oldWorkflowStatus === License::WORKFLOW_EXPIRED && !$license->hasExpired()) {
+                    // Was expired but now has a future date (extended), set back to active
+                    $license->update(['workflow_status' => License::WORKFLOW_ACTIVE]);
+                }
+            }
+            
+            $license->refresh();
+            
+            // Count changes
+            if ($oldRenewalStatus !== $license->renewal_status || 
+                $oldBillingStatus !== $license->billing_status ||
+                $oldWorkflowStatus !== $license->workflow_status) {
+                $updated++;
+            }
+            
+            // Count by new status
+            if ($license->renewal_status === License::RENEWAL_OPEN) {
+                $openedCount++;
+            } elseif ($license->renewal_status === License::RENEWAL_EXPIRED) {
+                $expiredCount++;
+            } else {
+                $closedCount++;
+            }
+        }
+
+        $message = "Bulk refresh completed! {$updated} license(s) updated. ";
+        $message .= "Status summary: {$openedCount} open (within 2 months), {$expiredCount} expired, {$closedCount} closed.";
+
+        return redirect()
+            ->route('admin.licenses.index')
+            ->with('success', $message);
     }
 
     /**
@@ -369,12 +444,10 @@ class LicenseController extends Controller
             $client->notify(new LicenseStatusNotification($license, $oldStatus, $newStatus, Auth::user()->name));
         }
 
-        // Notify assigned agent if different from current user
-        if ($license->assigned_agent_id && $license->assigned_agent_id != Auth::id()) {
-            $agent = $license->assignedAgent;
-            if ($agent) {
-                $agent->notify(new LicenseStatusNotification($license, $oldStatus, $newStatus, Auth::user()->name));
-            }
+        // Notify assigned agent if different from current user (from latest payment)
+        $agent = $license->assignedAgent;
+        if ($agent && $agent->id != Auth::id()) {
+            $agent->notify(new LicenseStatusNotification($license, $oldStatus, $newStatus, Auth::user()->name));
         }
     }
 
@@ -389,12 +462,10 @@ class LicenseController extends Controller
             $client->notify(new RenewalStatusNotification($license, $license->renewal_status));
         }
 
-        // Notify assigned agent
-        if ($license->assigned_agent_id) {
-            $agent = $license->assignedAgent;
-            if ($agent) {
-                $agent->notify(new RenewalStatusNotification($license, $license->renewal_status));
-            }
+        // Notify assigned agent (from latest payment)
+        $agent = $license->assignedAgent;
+        if ($agent) {
+            $agent->notify(new RenewalStatusNotification($license, $license->renewal_status));
         }
     }
 
@@ -409,12 +480,10 @@ class LicenseController extends Controller
             $client->notify(new BillingStatusNotification($license, $license->billing_status, $amount));
         }
 
-        // Notify assigned agent
-        if ($license->assigned_agent_id) {
-            $agent = $license->assignedAgent;
-            if ($agent) {
-                $agent->notify(new BillingStatusNotification($license, $license->billing_status, $amount));
-            }
+        // Notify assigned agent (from latest payment)
+        $agent = $license->assignedAgent;
+        if ($agent) {
+            $agent->notify(new BillingStatusNotification($license, $license->billing_status, $amount));
         }
     }
 }

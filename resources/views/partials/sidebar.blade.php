@@ -10,7 +10,7 @@
         <div class="sidebar-brand-icon">
             <i class="fas fa-bolt"></i>
         </div>
-        <span class="sidebar-brand-text">Blue<span>side</span></span>
+        <span class="sidebar-brand-text">CL<span>S</span></span>
     </div>
 
     <nav class="sidebar-nav">
@@ -119,9 +119,11 @@
                 <span class="sidebar-footer-role">{{ $user->role->name ?? 'User' }}</span>
             </div>
             <div class="sidebar-footer-actions">
-                <a href="{{ route('admin.settings') }}" class="sidebar-footer-btn" title="Settings">
-                    <i class="fas fa-cog"></i>
-                </a>
+                @if(Auth::user()->Role->name == "Admin")
+                    <a href="{{ route('admin.settings') }}" class="sidebar-footer-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                @endif
                 <form action="{{ route('auth.logout') }}" method="POST" class="d-inline">
                     @csrf
                     <button type="submit" class="sidebar-footer-btn" title="Logout">

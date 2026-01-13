@@ -9,7 +9,7 @@
     @endphp
 
     <x-page-header title="View License" subtitle="License details for {{ $license->legal_name ?? 'N/A' }}">
-        <x-button href="{{ route('admin.licenses.index') }}" variant="secondary" icon="bi bi-arrow-left">Back</x-button>
+        <x-button href="{{ route('admin.licenses.index') }}" variant="primary" icon="bi bi-arrow-left">Back</x-button>
         <x-button href="{{ route('admin.licenses.edit', $license) }}" variant="gold" icon="bi bi-pencil">Edit</x-button>
     </x-page-header>
 
@@ -64,9 +64,7 @@
                             @if($isAdminAgent)
                                 <form action="{{ route('admin.licenses.refresh-status', $license) }}" method="POST" class="d-inline ms-2">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Refresh Status">
-                                        <i class="bi bi-arrow-clockwise"></i>
-                                    </button>
+                                    <x-button type="submit" variant="outline-secondary" size="sm" icon="bi bi-arrow-clockwise" title="Refresh Status"></x-button>
                                 </form>
                             @endif
                         </div>
@@ -83,16 +81,14 @@
                                 Create Payment
                             </x-button>
                         @endif
-                        <x-button href="{{ route('admin.licenses.payments.show', $license) }}" variant="success" icon="bi bi-credit-card">
+                        <x-button href="{{ route('admin.licenses.payments.show', $license) }}" variant="primary" icon="bi bi-credit-card">
                             Payment
                             @if($license->activePayment)
                                 <span class="badge bg-warning text-dark ms-1">Open</span>
                             @endif
                         </x-button>
                         @if($isAdminAgent && in_array($license->billing_status, ['paid', 'overridden']))
-                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#extendExpirationModal">
-                                <i class="bi bi-calendar-plus me-1"></i> Extend License
-                            </button>
+                            <x-button type="button" variant="warning" icon="bi bi-calendar-plus" data-bs-toggle="modal" data-bs-target="#extendExpirationModal">Extend License</x-button>
                         @endif
                     </div>
                 </div>
@@ -276,7 +272,7 @@
     </div>
 
     <div class="my-3 d-flex justify-content-end gap-2">
-        <x-button href="{{ route('admin.licenses.index') }}" variant="secondary">Back to List</x-button>
+        <x-button href="{{ route('admin.licenses.index') }}" variant="primary" icon="bi bi-arrow-left">Back to List</x-button>
         <x-button href="{{ route('admin.licenses.edit', $license) }}" variant="gold" icon="bi bi-pencil">Edit License</x-button>
     </div>
 @endsection
@@ -355,18 +351,16 @@
                     <div class="mb-3">
                         <label class="form-label text-muted">Quick Select:</label>
                         <div class="d-flex gap-2 flex-wrap">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setExpirationDate(6)">+6 Months</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setExpirationDate(12)">+1 Year</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setExpirationDate(24)">+2 Years</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setExpirationDate(36)">+3 Years</button>
+                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(6)">+6 Months</x-button>
+                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(12)">+1 Year</x-button>
+                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(24)">+2 Years</x-button>
+                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(36)">+3 Years</x-button>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-check-lg me-1"></i>Extend License
-                    </button>
+                    <x-button type="button" variant="secondary" data-bs-dismiss="modal">Cancel</x-button>
+                    <x-button type="submit" variant="warning" icon="bi bi-check-lg">Extend License</x-button>
                 </div>
             </form>
         </div>
