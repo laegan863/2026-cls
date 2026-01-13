@@ -18,8 +18,14 @@ class DashboardController extends Controller
     {
         $now = Carbon::now();
         $twoMonthsFromNow = $now->copy()->addMonths(2);
-        $role = Auth::user()->Role->name;
+        $user = Auth::user();
+        $role = $user->Role->name;
         $userId = Auth::id();
+        
+        // Check if user has access to the payment queue
+        if (!$user->hasPermission('payment-renewal-queue')) {
+            abort(403, 'Unauthorized access to dashboard.');
+        }
         
         // Renewal Queue - based on license_payments to track each renewal separately
         $query = LicensePayment::with(['license.client', 'assignedAgent', 'creator'])
@@ -32,14 +38,15 @@ class DashboardController extends Controller
                 ]);
             });
         
-        // Role-based filtering: Agent can only see their own processed payments
-        if ($role === 'Agent') {
-            $query->where(function ($q) use ($userId) {
-                $q->where('assigned_agent_id', $userId)
-                  ->orWhere('created_by', $userId);
+        // Role-based filtering: Client can only see their own transactions
+        // Admin and Agent can see all payments
+        if (!$user->hasPermission('view-overdue-active-licenses-and-renewal-open')) {
+            // Client can only see their own transactions
+            $query->whereHas('license', function ($q) use ($userId) {
+                $q->where('client_id', $userId);
             });
         }
-        // Admin can see all payments
+        // Admin and Agent can see all payments
         
         // Apply filters
         if ($request->filled('expiration_from')) {
@@ -94,14 +101,14 @@ class DashboardController extends Controller
             'expired' => License::where('renewal_status', License::RENEWAL_EXPIRED)->count(),
         ];
         
-        // Billing Status Stats
+        // Billing Status Stats - based on payment statuses to match the renewal queue table
         $billingStatusStats = [
-            'closed' => License::where('billing_status', License::BILLING_CLOSED)->count(),
-            'pending' => License::where('billing_status', License::BILLING_PENDING)->count(),
-            'open' => License::where('billing_status', License::BILLING_OPEN)->count(),
-            'invoiced' => License::where('billing_status', License::BILLING_INVOICED)->count(),
-            'paid' => License::where('billing_status', License::BILLING_PAID)->count(),
-            'overridden' => License::where('billing_status', License::BILLING_OVERRIDDEN)->count(),
+            'closed' => LicensePayment::where('status', LicensePayment::STATUS_CANCELLED)->count(),
+            'pending' => LicensePayment::where('status', LicensePayment::STATUS_DRAFT)->count(),
+            'open' => LicensePayment::where('status', LicensePayment::STATUS_OPEN)->count(),
+            'invoiced' => LicensePayment::where('status', LicensePayment::STATUS_OPEN)->count(), // invoiced same as open for payments
+            'paid' => LicensePayment::where('status', LicensePayment::STATUS_PAID)->count(),
+            'overridden' => LicensePayment::where('status', LicensePayment::STATUS_OVERRIDDEN)->count(),
         ];
         
         // Workflow Status Stats

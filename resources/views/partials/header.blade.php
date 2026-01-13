@@ -11,140 +11,38 @@
 
     <div class="header-actions">
         <!-- Notifications Dropdown -->
-        @php
-            $notifications = Auth::user()->notifications()->latest()->take(10)->get();
-            $unreadCount = Auth::user()->unreadNotifications()->count();
-        @endphp
-        <div class="dropdown">
+        <div class="dropdown" id="notificationDropdown">
             <button class="header-action-btn" title="Notifications" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-bell"></i>
-                @if($unreadCount > 0)
-                    <span class="notification-dot"></span>
-                @endif
+                <span class="notification-dot" id="notificationDot" style="display: none;"></span>
             </button>
             <div class="dropdown-menu dropdown-menu-end notification-dropdown p-0 mt-2 shadow-lg border-0" style="width: 380px;">
                 <!-- Header -->
                 <div class="notification-header px-4 py-3 d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="mb-0 fw-semibold text-white">Notifications</h6>
-                        <small class="text-white-50">
-                            @if($unreadCount > 0)
-                                You have {{ $unreadCount }} unread {{ Str::plural('notification', $unreadCount) }}
-                            @else
-                                All caught up!
-                            @endif
-                        </small>
+                        <small class="text-white-50" id="notificationSubtitle">Loading...</small>
                     </div>
-                    @if($unreadCount > 0)
-                        <span class="badge bg-white text-primary fw-semibold px-2 py-1">{{ $unreadCount }} New</span>
-                    @endif
+                    <span class="badge bg-white text-primary fw-semibold px-2 py-1" id="notificationBadge" style="display: none;">0 New</span>
                 </div>
                 
                 <!-- Notification Items -->
-                <div class="notification-list" style="max-height: 360px; overflow-y: auto;">
-                    @forelse($notifications as $notification)
-                        @php
-                            $type = $notification->data['type'] ?? 'general';
-                            $iconClass = match($type) {
-                                'payment_created' => 'primary',
-                                'payment_completed', 'payment_received' => 'success',
-                                'requirement_added' => 'info',
-                                'requirement_submitted' => 'primary',
-                                'requirement_approved', 'license_approved' => 'success',
-                                'requirement_rejected', 'license_rejected' => 'danger',
-                                'license_created' => 'gold',
-                                'license_expiring' => 'warning',
-                                'license_expired' => 'danger',
-                                'renewal_open' => 'warning',
-                                default => 'secondary',
-                            };
-                            $icon = match($type) {
-                                'payment_created' => 'bi-credit-card-fill',
-                                'payment_completed', 'payment_received' => 'bi-check-circle-fill',
-                                'requirement_added' => 'bi-file-earmark-plus-fill',
-                                'requirement_submitted' => 'bi-file-earmark-arrow-up-fill',
-                                'requirement_approved' => 'bi-file-earmark-check-fill',
-                                'requirement_rejected' => 'bi-file-earmark-x-fill',
-                                'license_created' => 'bi-file-earmark-text-fill',
-                                'license_approved' => 'bi-patch-check-fill',
-                                'license_rejected' => 'bi-x-circle-fill',
-                                'license_expiring' => 'bi-exclamation-triangle-fill',
-                                'license_expired' => 'bi-calendar-x-fill',
-                                'renewal_open' => 'bi-arrow-repeat',
-                                default => 'bi-bell-fill',
-                            };
-                            $title = match($type) {
-                                'payment_created' => 'Payment Required',
-                                'payment_completed' => 'Payment Completed',
-                                'payment_received' => 'Payment Received',
-                                'requirement_added' => 'New Requirement',
-                                'requirement_submitted' => 'Requirement Submitted',
-                                'requirement_approved' => 'Requirement Approved',
-                                'requirement_rejected' => 'Requirement Rejected',
-                                'license_created' => 'New License Application',
-                                'license_approved' => 'License Approved',
-                                'license_rejected' => 'License Rejected',
-                                'license_expiring' => 'License Expiring Soon',
-                                'license_expired' => 'License Expired',
-                                'renewal_open' => 'Renewal Window Open',
-                                default => 'Notification',
-                            };
-                        @endphp
-                        <a href="{{ $notification->data['url'] ?? '#' }}" 
-                           class="notification-item {{ is_null($notification->read_at) ? 'unread' : '' }}"
-                           onclick="markNotificationRead('{{ $notification->id }}')">
-                            <div class="notification-icon-wrapper">
-                                <div class="notification-icon {{ $iconClass }}">
-                                    <i class="bi {{ $icon }}"></i>
-                                </div>
-                                @if(is_null($notification->read_at))
-                                    <span class="notification-status"></span>
-                                @endif
-                            </div>
-                            <div class="notification-content">
-                                <div class="notification-title">{{ $title }}</div>
-                                <div class="notification-text">{{ Str::limit($notification->data['message'] ?? '', 50) }}</div>
-                                <div class="notification-time">
-                                    <i class="bi bi-clock"></i> {{ $notification->created_at->diffForHumans() }}
-                                </div>
-                            </div>
-                            <div class="notification-actions">
-                                @if(is_null($notification->read_at))
-                                    <button class="btn-notification-action" title="Mark as read" onclick="event.preventDefault(); markNotificationRead('{{ $notification->id }}')">
-                                        <i class="bi bi-check2"></i>
-                                    </button>
-                                @else
-                                    <button class="btn-notification-action" title="Delete" onclick="event.preventDefault(); deleteNotification('{{ $notification->id }}')">
-                                        <i class="bi bi-x"></i>
-                                    </button>
-                                @endif
-                            </div>
-                        </a>
-                    @empty
-                        <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="bi bi-bell-slash fs-1 text-muted"></i>
-                            </div>
-                            <h6 class="text-muted mb-1">No notifications</h6>
-                            <small class="text-muted">You're all caught up!</small>
+                <div class="notification-list" id="notificationList" style="max-height: 360px; overflow-y: auto;">
+                    <div class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
                         </div>
-                    @endforelse
+                    </div>
                 </div>
                 
                 <!-- Footer -->
-                @if($notifications->count() > 0)
-                <div class="notification-footer px-4 py-3 border-top d-flex justify-content-between align-items-center">
-                    @if($unreadCount > 0)
-                        <form action="{{ route('admin.notifications.mark-all-read') }}" method="POST" class="d-inline">
-                            @csrf
-                            <x-button type="submit" variant="outline-primary" size="sm" icon="bi bi-check2-all">Mark all read</x-button>
-                        </form>
-                    @else
-                        <span></span>
-                    @endif
+                <div class="notification-footer px-4 py-3 border-top d-flex justify-content-between align-items-center" id="notificationFooter" style="display: none;">
+                    <form action="{{ route('admin.notifications.mark-all-read') }}" method="POST" class="d-inline" id="markAllReadForm">
+                        @csrf
+                        <x-button type="button" variant="outline-primary" size="sm" icon="bi bi-check2-all" onclick="markAllNotificationsRead()">Mark all read</x-button>
+                    </form>
                     <x-button href="{{ route('admin.notifications.index') }}" variant="primary" size="sm">View All <i class="bi bi-arrow-right ms-1"></i></x-button>
                 </div>
-                @endif
             </div>
         </div>
         <div class="header-profile dropdown">
@@ -205,3 +103,325 @@
         </div>
     </div>
 </header>
+
+<script>
+// Notification System - Real-time polling
+const NotificationSystem = {
+    pollInterval: 5000, // Poll every 5 seconds for near real-time updates
+    pollTimer: null,
+    lastUnreadCount: 0,
+    isPolling: false,
+    
+    init() {
+        this.fetchNotifications();
+        this.startPolling();
+        
+        // Refresh when dropdown is opened
+        document.getElementById('notificationDropdown')?.addEventListener('show.bs.dropdown', () => {
+            this.fetchNotifications();
+        });
+        
+        // Use visibility API to pause polling when tab is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.stopPolling();
+            } else {
+                this.fetchNotifications();
+                this.startPolling();
+            }
+        });
+        
+        // Also poll on window focus
+        window.addEventListener('focus', () => {
+            this.fetchNotifications();
+        });
+    },
+    
+    startPolling() {
+        if (this.pollTimer) return; // Already polling
+        this.pollTimer = setInterval(() => {
+            this.fetchNotifications();
+        }, this.pollInterval);
+    },
+    
+    stopPolling() {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+        }
+    },
+    
+    async fetchNotifications() {
+        if (this.isPolling) return; // Prevent overlapping requests
+        this.isPolling = true;
+        
+        try {
+            const response = await fetch('{{ route("admin.notifications.get") }}', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to fetch notifications');
+            
+            const data = await response.json();
+            this.renderNotifications(data.notifications, data.unread_count);
+            
+            // Show alert for new notifications
+            if (data.unread_count > this.lastUnreadCount && this.lastUnreadCount !== 0) {
+                this.showNewNotificationAlert(data.unread_count - this.lastUnreadCount);
+            }
+            this.lastUnreadCount = data.unread_count;
+            
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        } finally {
+            this.isPolling = false;
+        }
+    },
+    
+    renderNotifications(notifications, unreadCount) {
+        const dot = document.getElementById('notificationDot');
+        const badge = document.getElementById('notificationBadge');
+        const subtitle = document.getElementById('notificationSubtitle');
+        const list = document.getElementById('notificationList');
+        const footer = document.getElementById('notificationFooter');
+        const markAllForm = document.getElementById('markAllReadForm');
+        
+        // Update dot and badge
+        if (unreadCount > 0) {
+            dot.style.display = 'block';
+            badge.style.display = 'block';
+            badge.textContent = unreadCount + ' New';
+            subtitle.textContent = `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`;
+            markAllForm.style.display = 'inline';
+        } else {
+            dot.style.display = 'none';
+            badge.style.display = 'none';
+            subtitle.textContent = 'All caught up!';
+            markAllForm.style.display = 'none';
+        }
+        
+        // Render notification list
+        if (notifications.length === 0) {
+            list.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="bi bi-bell-slash fs-1 text-muted"></i>
+                    </div>
+                    <h6 class="text-muted mb-1">No notifications</h6>
+                    <small class="text-muted">You're all caught up!</small>
+                </div>
+            `;
+            footer.style.display = 'none';
+        } else {
+            list.innerHTML = notifications.map(n => this.renderNotificationItem(n)).join('');
+            footer.style.display = 'flex';
+        }
+    },
+    
+    renderNotificationItem(notification) {
+        const titleMap = {
+            'payment_created': 'Payment Required',
+            'payment_completed': 'Payment Completed',
+            'payment_received': 'Payment Received',
+            'requirement_added': 'New Requirement',
+            'requirement_submitted': 'Requirement Submitted',
+            'requirement_approved': 'Requirement Approved',
+            'requirement_rejected': 'Requirement Rejected',
+            'license_created': 'New License Application',
+            'license_approved': 'License Approved',
+            'license_rejected': 'License Rejected',
+            'license_expiring': 'License Expiring Soon',
+            'license_expired': 'License Expired',
+            'renewal_open': 'Renewal Window Open',
+        };
+        
+        const title = titleMap[notification.type] || 'Notification';
+        const message = notification.message ? (notification.message.length > 50 ? notification.message.substring(0, 50) + '...' : notification.message) : '';
+        
+        return `
+            <a href="${notification.url}" 
+               class="notification-item ${!notification.read ? 'unread' : ''}"
+               onclick="NotificationSystem.markAsRead('${notification.id}')">
+                <div class="notification-icon-wrapper">
+                    <div class="notification-icon ${notification.icon_class}">
+                        <i class="bi ${notification.icon}"></i>
+                    </div>
+                    ${!notification.read ? '<span class="notification-status"></span>' : ''}
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-text">${message}</div>
+                    <div class="notification-time">
+                        <i class="bi bi-clock"></i> ${notification.time}
+                    </div>
+                </div>
+                <div class="notification-actions">
+                    ${!notification.read 
+                        ? `<button class="btn-notification-action" title="Mark as read" onclick="event.preventDefault(); event.stopPropagation(); NotificationSystem.markAsRead('${notification.id}')">
+                            <i class="bi bi-check2"></i>
+                           </button>`
+                        : `<button class="btn-notification-action" title="Delete" onclick="event.preventDefault(); event.stopPropagation(); NotificationSystem.deleteNotification('${notification.id}')">
+                            <i class="bi bi-x"></i>
+                           </button>`
+                    }
+                </div>
+            </a>
+        `;
+    },
+    
+    async markAsRead(id) {
+        try {
+            const response = await fetch(`{{ url('admin/notifications') }}/${id}/read`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (response.ok) {
+                this.fetchNotifications();
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    },
+    
+    async deleteNotification(id) {
+        try {
+            const response = await fetch(`{{ url('admin/notifications') }}/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (response.ok) {
+                this.fetchNotifications();
+            }
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+        }
+    },
+    
+    showNewNotificationAlert(count) {
+        // Play notification sound
+        this.playNotificationSound();
+        
+        // Show browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('New Notification', {
+                body: `You have ${count} new notification${count > 1 ? 's' : ''}`,
+                icon: '/favicon.ico',
+                tag: 'cls-notification', // Prevents duplicate notifications
+                requireInteraction: false
+            });
+        }
+        
+        // Add a subtle animation to the bell icon
+        const bell = document.querySelector('#notificationDropdown .bi-bell');
+        if (bell) {
+            bell.classList.add('notification-shake');
+            setTimeout(() => bell.classList.remove('notification-shake'), 1000);
+        }
+        
+        // Flash the notification dot
+        const dot = document.getElementById('notificationDot');
+        if (dot) {
+            dot.classList.add('notification-pulse');
+        }
+    },
+    
+    playNotificationSound() {
+        // Create a simple notification beep using Web Audio API
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        } catch (e) {
+            // Audio not supported or blocked
+            console.log('Notification sound not available');
+        }
+    }
+};
+
+// Global functions for backward compatibility
+function markNotificationRead(id) {
+    NotificationSystem.markAsRead(id);
+}
+
+function deleteNotification(id) {
+    NotificationSystem.deleteNotification(id);
+}
+
+async function markAllNotificationsRead() {
+    try {
+        const response = await fetch('{{ route("admin.notifications.mark-all-read") }}', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (response.ok) {
+            NotificationSystem.fetchNotifications();
+        }
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+    }
+}
+
+// Request browser notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    NotificationSystem.init();
+});
+</script>
+
+<style>
+@keyframes notification-shake {
+    0%, 100% { transform: rotate(0deg); }
+    10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+    20%, 40%, 60%, 80% { transform: rotate(10deg); }
+}
+
+@keyframes notification-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.7; }
+}
+
+.notification-shake {
+    animation: notification-shake 0.5s ease-in-out;
+}
+
+.notification-pulse {
+    animation: notification-pulse 0.5s ease-in-out 3;
+}
+</style>

@@ -36,18 +36,27 @@
                     @if($permissions->count() > 0)
                         <div class="mb-3">
                             <label class="form-label">Permissions</label>
-                            <div class="row">
-                                @foreach($permissions as $permission)
-                                    <div class="col-md-6 mb-2">
-                                        <x-checkbox 
-                                            name="permissions[]" 
-                                            value="{{ $permission->id }}" 
-                                            :checked="in_array($permission->id, old('permissions', []))" 
-                                            label="{{ $permission->name }}" 
-                                        />
+                            @php
+                                $groupedPermissions = $permissions->groupBy('module');
+                            @endphp
+                            @foreach($groupedPermissions as $moduleName => $modulePermissions)
+                                <div class="mb-3">
+                                    <div class="fw-semibold text-muted small text-uppercase mb-2">{{ $moduleName ?: 'General' }}</div>
+                                    <div class="row">
+                                        @foreach($modulePermissions as $permission)
+                                            <div class="col-md-6 mb-2">
+                                                <x-checkbox 
+                                                    name="permissions[]" 
+                                                    value="{{ $permission->id }}" 
+                                                    :checked="in_array($permission->id, old('permissions', []))" 
+                                                    label="{{ $permission->name }}" 
+                                                    id="permission_{{ $permission->id }}"
+                                                />
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endforeach
-                            </div>
+                                </div>
+                            @endforeach
                         </div>
                     @endif
                 </x-card>
@@ -55,93 +64,48 @@
 
             <div class="col-lg-6">
                 <x-card title="Module Access Permissions" icon="bi bi-grid-3x3-gap">
-                    <p class="text-muted small mb-3">Configure which modules this role can access and what actions are allowed.</p>
+                    <p class="text-muted small mb-3">Select which modules this role can access.</p>
                     
                     @if($modules->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Module</th>
-                                        <th class="text-center" width="60">View</th>
-                                        <th class="text-center" width="60">Create</th>
-                                        <th class="text-center" width="60">Edit</th>
-                                        <th class="text-center" width="60">Delete</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($modules as $module)
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    @if($module->icon)
-                                                        <i class="{{ $module->icon }}"></i>
-                                                    @endif
-                                                    <span>{{ $module->name }}</span>
-                                                    @if($module->is_coming_soon)
-                                                        <span class="badge bg-warning text-dark" style="font-size: 0.6rem">Soon</span>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <input type="checkbox" class="form-check-input" 
-                                                    name="modules[{{ $module->id }}][can_view]" value="1"
-                                                    {{ old("modules.{$module->id}.can_view") ? 'checked' : '' }}>
-                                            </td>
-                                            <td class="text-center">
-                                                <input type="checkbox" class="form-check-input" 
-                                                    name="modules[{{ $module->id }}][can_create]" value="1"
-                                                    {{ old("modules.{$module->id}.can_create") ? 'checked' : '' }}>
-                                            </td>
-                                            <td class="text-center">
-                                                <input type="checkbox" class="form-check-input" 
-                                                    name="modules[{{ $module->id }}][can_edit]" value="1"
-                                                    {{ old("modules.{$module->id}.can_edit") ? 'checked' : '' }}>
-                                            </td>
-                                            <td class="text-center">
-                                                <input type="checkbox" class="form-check-input" 
-                                                    name="modules[{{ $module->id }}][can_delete]" value="1"
-                                                    {{ old("modules.{$module->id}.can_delete") ? 'checked' : '' }}>
-                                            </td>
-                                        </tr>
-                                        @if($module->children && $module->children->count() > 0)
-                                            @foreach($module->children as $child)
-                                                <tr class="table-light">
-                                                    <td class="ps-4">
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <i class="bi bi-arrow-return-right text-muted"></i>
-                                                            @if($child->icon)
-                                                                <i class="{{ $child->icon }}"></i>
-                                                            @endif
-                                                            <span>{{ $child->name }}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <input type="checkbox" class="form-check-input" 
-                                                            name="modules[{{ $child->id }}][can_view]" value="1"
-                                                            {{ old("modules.{$child->id}.can_view") ? 'checked' : '' }}>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <input type="checkbox" class="form-check-input" 
-                                                            name="modules[{{ $child->id }}][can_create]" value="1"
-                                                            {{ old("modules.{$child->id}.can_create") ? 'checked' : '' }}>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <input type="checkbox" class="form-check-input" 
-                                                            name="modules[{{ $child->id }}][can_edit]" value="1"
-                                                            {{ old("modules.{$child->id}.can_edit") ? 'checked' : '' }}>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <input type="checkbox" class="form-check-input" 
-                                                            name="modules[{{ $child->id }}][can_delete]" value="1"
-                                                            {{ old("modules.{$child->id}.can_delete") ? 'checked' : '' }}>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
+                        <div class="module-access-list">
+                            @foreach($modules as $module)
+                                <div class="module-item d-flex align-items-center justify-content-between py-2 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if($module->icon)
+                                            <i class="{{ $module->icon }} text-primary"></i>
                                         @endif
+                                        <span class="fw-medium">{{ $module->name }}</span>
+                                        @if($module->is_coming_soon)
+                                            <span class="badge bg-warning text-dark" style="font-size: 0.6rem">Soon</span>
+                                        @endif
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" class="form-check-input" role="switch"
+                                            name="modules[{{ $module->id }}][has_access]" value="1"
+                                            id="module_{{ $module->id }}"
+                                            {{ old("modules.{$module->id}.has_access") ? 'checked' : '' }}>
+                                    </div>
+                                </div>
+                                @if($module->children && $module->children->count() > 0)
+                                    @foreach($module->children as $child)
+                                        <div class="module-item d-flex align-items-center justify-content-between py-2 border-bottom ps-4 bg-light">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-arrow-return-right text-muted"></i>
+                                                @if($child->icon)
+                                                    <i class="{{ $child->icon }} text-secondary"></i>
+                                                @endif
+                                                <span>{{ $child->name }}</span>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input type="checkbox" class="form-check-input" role="switch"
+                                                    name="modules[{{ $child->id }}][has_access]" value="1"
+                                                    id="module_{{ $child->id }}"
+                                                    {{ old("modules.{$child->id}.has_access") ? 'checked' : '' }}>
+                                            </div>
+                                        </div>
                                     @endforeach
-                                </tbody>
-                            </table>
+                                @endif
+                            @endforeach
                         </div>
                     @else
                         <p class="text-muted">No modules available. <a href="{{ route('admin.modules.create') }}">Create one</a>.</p>

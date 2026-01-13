@@ -20,13 +20,16 @@
 
 @section('content')
     <!-- Page Header -->
-    <x-page-header title="Dashboard" subtitle="Welcome back! Here's your renewal queue overview.">
+    <x-page-header title="Dashboard" subtitle="{{ Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open') ? 'Welcome back! Here\'s your renewal queue overview.' : 'View your payment and renewal transactions.' }}">
+        @if(Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open'))
         <form action="{{ route('admin.licenses.bulk-refresh') }}" method="POST" class="d-inline">
             @csrf
             <x-button type="submit" variant="outline" icon="bi bi-arrow-clockwise">Refresh All Status</x-button>
         </form>
+        @endif
     </x-page-header>
 
+    @if(Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open'))
     <!-- Stats Overview Cards -->
     <div class="row g-4 mb-4">
         <div class="col-12 col-sm-6 col-xl-4">
@@ -59,7 +62,9 @@
             />
         </div>
     </div>
+    @endif
 
+    @if(Auth::user()->hasPermission('view-the-renewal-status-billing-status-due-date-distribution'))
     <!-- Charts Row -->
     <div class="row g-4 mb-4">
         <!-- Renewal Status Chart -->
@@ -103,21 +108,17 @@
                                 <strong class="text-warning">{{ $billingStatusStats['open'] ?? 0 }}</strong>
                             </div>
                             <div class="d-flex justify-content-between mb-1">
-                                <span>Pending</span>
+                                <span>Draft</span>
                                 <strong class="text-info">{{ $billingStatusStats['pending'] ?? 0 }}</strong>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="d-flex justify-content-between mb-1">
-                                <span>Invoiced</span>
-                                <strong>{{ $billingStatusStats['invoiced'] ?? 0 }}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between mb-1">
                                 <span>Overridden</span>
                                 <strong class="text-muted">{{ $billingStatusStats['overridden'] ?? 0 }}</strong>
                             </div>
                             <div class="d-flex justify-content-between mb-1">
-                                <span>Closed</span>
+                                <span>Cancelled</span>
                                 <strong class="text-secondary">{{ $billingStatusStats['closed'] ?? 0 }}</strong>
                             </div>
                         </div>
@@ -153,16 +154,21 @@
             </x-card>
         </div>
     </div>
+    @endif
 
+    @if(Auth::user()->hasPermission('payment-renewal-queue'))
     <!-- Renewal Queue Table -->
     <x-card title="Payment / Renewal Queue" icon="bi bi-list-check" :padding="false" class="mb-4">
+        @if(Auth::user()->hasPermission('view-the-renewal-status-billing-status-due-date-distribution'))
         <x-slot:actions>
             <x-button type="button" variant="outline" size="sm" icon="bi bi-funnel" data-bs-toggle="collapse" data-bs-target="#filterSection">
                 Filters
             </x-button>
         </x-slot:actions>
+        @endif
 
         <!-- Filter Section -->
+
         <div class="collapse p-3 border-bottom" id="filterSection">
             <form action="{{ route('admin.dashboard') }}" method="GET">
                 <div class="row g-3">
@@ -244,11 +250,15 @@
             <x-slot:head>
                 <tr>
                     <th>Invoice #</th>
+                    @if(in_array(Auth::user()->Role->name, ['Admin', 'Agent']))
                     <th>Client / Store</th>
+                    @endif
                     <th>Permit Type</th>
                     <th>Amount</th>
                     <th>Payment Status</th>
+                    @if(in_array(Auth::user()->Role->name, ['Admin', 'Agent']))
                     <th>Handled By</th>
+                    @endif
                     <th>Created</th>
                     <th class="text-center">Actions</th>
                 </tr>
@@ -265,6 +275,7 @@
                             {{ $payment->invoice_number }}
                         </a>
                     </td>
+                    @if(in_array(Auth::user()->Role->name, ['Admin', 'Agent']))
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             <x-avatar :name="$license->client->name ?? 'N/A'" size="sm" />
@@ -274,6 +285,7 @@
                             </div>
                         </div>
                     </td>
+                    @endif
                     <td>
                         <div>{{ $license->permit_type }}</div>
                         @if($license->permit_subtype)
@@ -304,6 +316,7 @@
                                 <x-badge type="secondary">{{ ucfirst($payment->status) }}</x-badge>
                         @endswitch
                     </td>
+                    @if(in_array(Auth::user()->Role->name, ['Admin', 'Agent']))
                     <td>
                         @if($handledBy)
                             <div class="d-flex align-items-center gap-2">
@@ -314,6 +327,7 @@
                             <span class="text-muted">Unassigned</span>
                         @endif
                     </td>
+                    @endif
                     <td>
                         <div class="fw-medium">{{ $payment->created_at->format('M d, Y') }}</div>
                         <small class="text-muted">{{ $payment->created_at->diffForHumans() }}</small>
@@ -327,7 +341,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="text-center py-5">
+                    <td colspan="{{ in_array(Auth::user()->Role->name, ['Admin', 'Agent']) ? 8 : 6 }}" class="text-center py-5">
                         <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
                         <p class="text-muted mb-0">No payments found in the renewal queue.</p>
                     </td>
@@ -341,7 +355,9 @@
             </div>
         @endif
     </x-card>
+    @endif
 
+    @if(Auth::user()->hasPermission('view-workflow-statuses'))
     <!-- Workflow Status Overview -->
     <x-card title="Workflow Status Overview" icon="bi bi-diagram-3" class="mb-4">
         <div class="row g-3">
@@ -383,9 +399,12 @@
             </div>
         </div>
     </x-card>
+    @endif
+
 @endsection
 
 @push('scripts')
+@if(Auth::user()->hasPermission('view-the-renewal-status-billing-status-due-date-distribution'))
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -425,17 +444,16 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(billingCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Paid', 'Open', 'Pending', 'Invoiced', 'Overridden', 'Closed'],
+                labels: ['Paid', 'Open', 'Draft', 'Overridden', 'Cancelled'],
                 datasets: [{
                     data: [
                         {{ $billingStatusStats['paid'] ?? 0 }},
                         {{ $billingStatusStats['open'] ?? 0 }},
                         {{ $billingStatusStats['pending'] ?? 0 }},
-                        {{ $billingStatusStats['invoiced'] ?? 0 }},
                         {{ $billingStatusStats['overridden'] ?? 0 }},
                         {{ $billingStatusStats['closed'] ?? 0 }}
                     ],
-                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#007bff', '#6c757d', '#adb5bd'],
+                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#6c757d', '#adb5bd'],
                     borderWidth: 0
                 }]
             },
@@ -492,4 +510,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+@endif
 @endpush

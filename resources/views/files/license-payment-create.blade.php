@@ -108,20 +108,20 @@ function addItem() {
     row.innerHTML = `
         <div class="col-lg-4">
             <label class="form-label">Label <span class="text-danger">*</span></label>
-            <input type="text" name="items[${itemIndex}][label]" class="form-control" placeholder="e.g., License Fee" required />
+            <x-input name="items[${itemIndex}][label]" type="text" placeholder="Additional details" required />
         </div>
         <div class="col-lg-4">
             <label class="form-label">Description</label>
-            <input type="text" name="items[${itemIndex}][description]" class="form-control" placeholder="Additional details" />
+            <x-input name="items[${itemIndex}][description]" type="text" placeholder="Additional details" />
         </div>
         <div class="col-lg-2">
             <label class="form-label">Amount ($) <span class="text-danger">*</span></label>
-            <input type="number" name="items[${itemIndex}][amount]" class="form-control" step="0.01" min="0.01" placeholder="0.00" required onchange="calculateTotal()" onkeyup="calculateTotal()" />
+            <x-input type="number" name="items[${itemIndex}][amount]" step="0.01" min="0.01" placeholder="0.00" required onchange="calculateTotal()" onkeyup="calculateTotal()" />
         </div>
         <div class="col-lg-2 d-flex align-items-end">
-            <button type="button" class="btn btn-danger-custom" onclick="removeItem(this)">
+            <x-button type="button" variant="danger" onclick="removeItem(this)">
                 <i class="bi bi-trash"></i>
-            </button>
+            </x-button>
         </div>
     `;
     

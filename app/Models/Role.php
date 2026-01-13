@@ -79,12 +79,25 @@ class Role extends Model
         $syncData = [];
         
         foreach ($modulePermissions as $moduleId => $permissions) {
-            $syncData[$moduleId] = [
-                'can_view' => $permissions['can_view'] ?? false,
-                'can_create' => $permissions['can_create'] ?? false,
-                'can_edit' => $permissions['can_edit'] ?? false,
-                'can_delete' => $permissions['can_delete'] ?? false,
-            ];
+            // Check if has_access is set (new simplified format)
+            if (isset($permissions['has_access'])) {
+                $hasAccess = (bool) $permissions['has_access'];
+                // When has_access is enabled, grant all permissions for that module
+                $syncData[$moduleId] = [
+                    'can_view' => $hasAccess,
+                    'can_create' => $hasAccess,
+                    'can_edit' => $hasAccess,
+                    'can_delete' => $hasAccess,
+                ];
+            } else {
+                // Legacy format with individual permissions
+                $syncData[$moduleId] = [
+                    'can_view' => $permissions['can_view'] ?? false,
+                    'can_create' => $permissions['can_create'] ?? false,
+                    'can_edit' => $permissions['can_edit'] ?? false,
+                    'can_delete' => $permissions['can_delete'] ?? false,
+                ];
+            }
         }
 
         $this->modules()->sync($syncData);

@@ -24,8 +24,54 @@
         </div>
     @endif
 
+
     <div class="row">
         <div class="col-lg-12">
+            <!-- Filter Section -->
+            <x-card class="mb-3">
+                <form action="{{ route('admin.licenses.index') }}" method="GET">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Transaction ID</label>
+                            <x-input type="text" name="transaction_id" placeholder="Search by Transaction ID" :value="request('transaction_id')" />
+                        </div>
+                        @if($role === 'Admin' || $role === 'Agent')
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Client Name</label>
+                            <x-select name="client_id">
+                                <option value="">All Clients</option>
+                                @php
+                                    $clients = \App\Models\User::whereHas('role', function($q) {
+                                        $q->where('slug', 'client');
+                                    })->orderBy('name')->get();
+                                @endphp
+                                @foreach($clients as $client)
+                                    <option value="{{ $client->id }}" {{ request('client_id') == $client->id ? 'selected' : '' }}>
+                                        {{ $client->name }}
+                                    </option>
+                                @endforeach
+                            </x-select>
+                        </div>
+                        @endif
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted">Renewal Status</label>
+                            <x-select name="renewal_status">
+                                <option value="">All Status</option>
+                                <option value="open" {{ request('renewal_status') == 'open' ? 'selected' : '' }}>Open</option>
+                                <option value="closed" {{ request('renewal_status') == 'closed' ? 'selected' : '' }}>Closed</option>
+                                <option value="expired" {{ request('renewal_status') == 'expired' ? 'selected' : '' }}>Expired</option>
+                            </x-select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <x-button type="submit" variant="primary" icon="bi bi-search">Filter</x-button>
+                                <x-button href="{{ route('admin.licenses.index') }}" variant="outline">Clear</x-button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </x-card>
+
             <x-card title="Licenses List {{ $role === 'Client' ? '(My Licenses)' : '(All Licenses)' }}" icon="fas fa-table" class="mb-4" :padding="false">
                 <x-table>
                     <x-slot:head>
@@ -36,7 +82,7 @@
                             <th>Location</th>
                             <th>Renewal</th>
                             <th>Expiration</th>
-                            {{-- <th>Status</th> --}}
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </x-slot:head>
@@ -72,25 +118,30 @@
                                     N/A
                                 @endif
                             </td>
-                            {{-- <td>
-                                <x-badge type="primary">{{ ucfirst(str_replace('_', ' ', $license->workflow_status_label ?? 'N/A')) }}</x-badge>
-                            </td> --}}
+                            <td>
+                                <x-badge type="warning">{{ ucfirst(str_replace('_', ' ', $license->workflow_status_label ?? 'N/A')) }}</x-badge>
+                            </td>
                             <td>
                                 <x-dropdown align="end">
                                     <x-slot:trigger>
                                         <x-icon-button icon="fas fa-ellipsis-v" variant="light" size="sm" />
                                     </x-slot:trigger>
-                                    @if($license->status == "approved")
-                                        <x-dropdown-item href="" icon="fas fa-file-pdf">Create Payment</x-dropdown-item>
-                                    @endif
+                                    @if(Auth::user()->hasPermission('view'))
                                     <x-dropdown-item href="{{ route('admin.licenses.show', $license) }}" icon="fas fa-eye">View</x-dropdown-item>
+                                    @endif
+
+                                    @if(Auth::user()->hasPermission('edit'))
                                     <x-dropdown-item href="{{ route('admin.licenses.edit', $license) }}" icon="fas fa-edit">Edit</x-dropdown-item>
+                                    @endif
+
+                                    @if(Auth::user()->hasPermission('delete'))
                                     <x-dropdown-divider />
                                     <form action="{{ route('admin.licenses.destroy', $license) }}" method="POST" style="display: inline;">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to delete this license?')">Delete</button>
                                     </form>
+                                    @endif
                                 </x-dropdown>
                             </td>
                         </tr>
