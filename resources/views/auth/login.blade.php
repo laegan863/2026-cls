@@ -624,7 +624,7 @@
             </button>
         </form>
 
-        <div class="divider">
+        {{-- <div class="divider">
             <div class="divider-line"></div>
             <span class="divider-text">or continue with</span>
             <div class="divider-line"></div>
@@ -639,7 +639,7 @@
                 <i class="bi bi-microsoft"></i>
                 Microsoft
             </a>
-        </div>
+        </div> --}}
 
         <p class="signup-link">
             Don't have an account? <a href="{{ route('auth.register') }}">Create account</a>

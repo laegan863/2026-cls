@@ -24,6 +24,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login.post');
     Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('auth.register');
     Route::post('/register', [AuthController::class, 'register'])->name('auth.register.post');
+    Route::get('/verify/{token}', [AuthController::class, 'verifyAndCreateAccount'])->name('auth.verify');
 });
 
 // Logout route (must be authenticated)

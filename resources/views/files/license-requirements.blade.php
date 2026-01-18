@@ -288,16 +288,16 @@ function addRequirement() {
     row.innerHTML = `
         <div class="col-lg-4">
             <label class="form-label">Requirement Label <span class="text-danger">*</span></label>
-            <input type="text" name="requirements[${requirementIndex}][label]" class="form-control" placeholder="e.g., Business License Copy" required />
+            <x-input type="text" name="requirements[${requirementIndex}][label]" placeholder="e.g., Business License Copy" required />
         </div>
         <div class="col-lg-6">
             <label class="form-label">Description</label>
-            <input type="text" name="requirements[${requirementIndex}][description]" class="form-control" placeholder="Additional details about this requirement" />
+            <x-input type="text" name="requirements[${requirementIndex}][description]" placeholder="Additional details about this requirement" />
         </div>
         <div class="col-lg-2 d-flex align-items-end">
-            <button type="button" class="btn btn-danger-custom" onclick="removeRequirement(this)">
+            <x-button type="button" variant="danger" onclick="removeRequirement(this)">
                 <i class="bi bi-trash"></i> Remove
-            </button>
+            </x-button>
         </div>
     `;
     

@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\License;
 use App\Models\LicenseRequirement;
+use App\Models\User;
 use App\Notifications\RequirementAddedNotification;
 use App\Notifications\RequirementStatusNotification;
+use App\Notifications\RequirementSubmittedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -78,6 +80,9 @@ class LicenseRequirementController extends Controller
         }
 
         $requirement->markAsSubmitted($validated['value'] ?? null, $filePath);
+
+        // Notify admins and agents about the submission
+        $this->notifyAdminsAndAgents($license, $requirement);
 
         // Check if all requirements are submitted
         $allSubmitted = $license->requirements()
@@ -235,6 +240,22 @@ class LicenseRequirementController extends Controller
         $role = Auth::user()->Role->name;
         if ($role === 'Client' && $license->client_id !== Auth::id()) {
             abort(403, 'Unauthorized access.');
+        }
+    }
+
+    /**
+     * Notify all admins and agents about requirement submission
+     */
+    private function notifyAdminsAndAgents(License $license, LicenseRequirement $requirement): void
+    {
+        // Get all admins and agents
+        $staffUsers = User::whereHas('Role', function($query) {
+            $query->whereIn('name', ['Admin', 'Agent']);
+        })->where('id', '!=', Auth::id())->get();
+
+        // Notify all admins and agents
+        foreach ($staffUsers as $user) {
+            $user->notify(new RequirementSubmittedNotification($license, $requirement));
         }
     }
 }
