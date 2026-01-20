@@ -66,14 +66,19 @@
                             [
                                 'label' => 'Legal name',
                                 'name' => 'legal_name',
+                                'type' => 'text',
                             ],
                             [
                                 'label' => 'DBA',
                                 'name' => 'dba',
+                                'type' => 'text',
                             ],
                             [
                                 'label' => 'FEIN',
                                 'name' => 'fein',
+                                'type' => 'text',
+                                'maxlength' => 9,
+                                'pattern' => '[0-9]{9}',
                             ],
                         ];
                     @endphp
@@ -81,7 +86,12 @@
                         @foreach ($client as $field)
                             <div class="col-lg-6 mb-3">
                                 <label for="{{ $field['name'] }}" class="form-label">{{ $field['label'] }}</label>
-                                <x-input name="{{ $field['name'] }}" type="text" required
+                                <x-input 
+                                    :maxlength="$field['maxlength'] ?? null" 
+                                    :pattern="$field['pattern'] ?? null"
+                                    name="{{ $field['name'] }}" 
+                                    type="{{ $field['type'] }}" 
+                                    required
                                     placeholder="Enter {{ strtolower($field['label']) }}" />
                             </div>
                         @endforeach
@@ -95,31 +105,59 @@
             <div class="form-group">
                 <div class="row">
                     <div class="col-lg-6 mb-3">
+                        <label for="store_name" class="form-label">Store Name</label>
+                        <x-input name="store_name" type="text" placeholder="Enter store name"/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_address" class="form-label">Store Address</label>
+                        <x-input name="store_address" type="text" placeholder="Enter store address"/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_city" class="form-label">Store City</label>
+                        <x-input name="store_city" type="text" placeholder="Enter store city"/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_state" class="form-label">Store State</label>
+                        <x-input name="store_state" type="text" placeholder="Enter store state"/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_zip_code" class="form-label">Store Zip Code</label>
+                        <x-input name="store_zip_code" type="text" placeholder="Enter store zip code"/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_phone" class="form-label">Store Phone</label>
+                        <x-input name="store_phone" type="text" placeholder="Enter store phone"/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_email" class="form-label">Store Email</label>
+                        <x-input name="store_email" type="email" placeholder="Enter store email"/>
+                    </div>
+                </div>
+            </div>
+        </x-card>
+    </div>
+
+    <div class="my-2">
+        <x-card title="Location Details" icon="bi bi-geo-alt-fill">
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-lg-6 mb-3">
                         <label for="country" class="form-label">Country</label>
                         <x-select name="country" id="country" class="form-select" required>
                             <option value="">Select Country</option>
                         </x-select>
-                        {{-- <select name="country" id="country" class="form-select" required>
-                            <option value="">Select Country</option>
-                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="state" class="form-label">State</label>
                         <x-select name="state" id="state" class="form-select" required disabled>
                             <option value="">Select State</option>
                         </x-select>
-                        {{-- <select name="state" id="state" class="form-select" required disabled>
-                            <option value="">Select State</option>
-                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="city" class="form-label">City</label>
                         <x-select name="city" id="city" class="form-select" required disabled>
                             <option value="">Select City</option>
                         </x-select>
-                        {{-- <select name="city" id="city" class="form-select" required disabled>
-                            <option value="">Select City</option>
-                        </select> --}}
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="zip_code" class="form-label">Zip Code</label>
@@ -290,6 +328,15 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // FEIN input - restrict to 9 digits only
+    const feinInput = document.querySelector('input[name="fein"]');
+    if (feinInput) {
+        feinInput.addEventListener('input', function(e) {
+            // Remove non-digits and limit to 9 characters
+            this.value = this.value.replace(/\D/g, '').slice(0, 9);
+        });
+    }
+
     const API_BASE = 'https://api.countrystatecity.in/v1';
     const API_KEY = 'NHhvOEcyWk50N2Vna3VFTE00bFp3MjFKR0ZEOUhkZlg4RTk1MlJlaA==';
 

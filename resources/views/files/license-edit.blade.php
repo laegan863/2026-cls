@@ -85,6 +85,43 @@
                 <div class="form-group">
                     <div class="row">
                         <div class="col-lg-6 mb-3">
+                            <label for="store_name" class="form-label">Store Name</label>
+                            <x-input name="store_name" type="text" placeholder="Enter store name" value="{{ old('store_name', $license->store_name) }}" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="store_address" class="form-label">Store Address</label>
+                            <x-input name="store_address" type="text" placeholder="Enter store address" value="{{ old('store_address', $license->store_address) }}" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="store_city" class="form-label">Store City</label>
+                            <x-input name="store_city" type="text" placeholder="Enter store city" value="{{ old('store_city', $license->store_city) }}" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="store_state" class="form-label">Store State</label>
+                            <x-input name="store_state" type="text" placeholder="Enter store state" value="{{ old('store_state', $license->store_state) }}" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="store_zip_code" class="form-label">Store Zip Code</label>
+                            <x-input name="store_zip_code" type="text" placeholder="Enter store zip code" value="{{ old('store_zip_code', $license->store_zip_code) }}" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="store_phone" class="form-label">Store Phone</label>
+                            <x-input name="store_phone" type="text" placeholder="Enter store phone" value="{{ old('store_phone', $license->store_phone) }}" />
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="store_email" class="form-label">Store Email</label>
+                            <x-input name="store_email" type="email" placeholder="Enter store email" value="{{ old('store_email', $license->store_email) }}" />
+                        </div>
+                    </div>
+                </div>
+            </x-card>
+        </div>
+
+        <div class="my-2">
+            <x-card title="Location Details" icon="bi bi-geo-alt-fill">
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-lg-6 mb-3">
                             <label for="country" class="form-label">Country</label>
                             <select name="country" id="country" class="form-select" data-selected="{{ $license->country }}">
                                 <option value="">Select Country</option>

@@ -153,6 +153,41 @@
         <x-card title="Store / Location (Primary Operating Unit)" icon="bi bi-geo-alt-fill">
             <div class="row">
                 <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Store Name</label>
+                    <p class="form-control-plaintext">{{ $license->store_name ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Store Address</label>
+                    <p class="form-control-plaintext">{{ $license->store_address ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Store City</label>
+                    <p class="form-control-plaintext">{{ $license->store_city ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Store State</label>
+                    <p class="form-control-plaintext">{{ $license->store_state ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Store Zip Code</label>
+                    <p class="form-control-plaintext">{{ $license->store_zip_code ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Store Phone</label>
+                    <p class="form-control-plaintext">{{ $license->store_phone ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Store Email</label>
+                    <p class="form-control-plaintext">{{ $license->store_email ?? 'N/A' }}</p>
+                </div>
+            </div>
+        </x-card>
+    </div>
+
+    <div class="my-2">
+        <x-card title="Location Details" icon="bi bi-geo-alt-fill">
+            <div class="row">
+                <div class="col-lg-6 mb-3">
                     <label class="form-label fw-bold">Country</label>
                     <p class="form-control-plaintext">{{ $license->country ?? 'N/A' }}</p>
                 </div>
