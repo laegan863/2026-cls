@@ -251,7 +251,7 @@
                 <tr>
                     <th>Invoice #</th>
                     @if(in_array(Auth::user()->Role->name, ['Admin', 'Agent']))
-                    <th>Client / Store</th>
+                    <th>Store Name</th>
                     @endif
                     <th>Permit Type</th>
                     <th>Amount</th>
@@ -278,10 +278,9 @@
                     @if(in_array(Auth::user()->Role->name, ['Admin', 'Agent']))
                     <td>
                         <div class="d-flex align-items-center gap-2">
-                            <x-avatar :name="$license->client->name ?? 'N/A'" size="sm" />
+                            <x-avatar :name="$license->store_name ?? 'N/A'" size="sm" />
                             <div>
-                                <div class="fw-medium">{{ $license->client->name ?? 'N/A' }}</div>
-                                <small class="text-muted">{{ $license->dba ?: $license->legal_name }}</small>
+                                <div class="fw-medium">{{ $license->store_name ?? 'N/A' }}</div>
                             </div>
                         </div>
                     </td>

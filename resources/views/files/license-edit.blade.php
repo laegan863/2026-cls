@@ -42,7 +42,7 @@
                             <div class="col-lg-6 mb-3">
                                 <label for="client_name" class="form-label">Client Name</label>
                                 <x-input name="client_name" type="text" value="{{ Auth::user()->name }}" readonly />
-                                <input type="hidden" name="client_id" value="{{ Auth::id() }}">
+                                <x-input type="hidden" name="client_id" value="{{ Auth::id() }}" />
                             </div>
                         @endif
                         
@@ -93,16 +93,32 @@
                             <x-input name="store_address" type="text" placeholder="Enter store address" value="{{ old('store_address', $license->store_address) }}" />
                         </div>
                         <div class="col-lg-6 mb-3">
-                            <label for="store_city" class="form-label">Store City</label>
-                            <x-input name="store_city" type="text" placeholder="Enter store city" value="{{ old('store_city', $license->store_city) }}" />
+                            <label for="country" class="form-label">Country</label>
+                            <x-select name="country" id="country" class="form-select" data-selected="{{ $license->country }}">
+                                <option value="">Select Country</option>
+                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
-                            <label for="store_state" class="form-label">Store State</label>
-                            <x-input name="store_state" type="text" placeholder="Enter store state" value="{{ old('store_state', $license->store_state) }}" />
+                            <label for="state" class="form-label">State</label>
+                            <x-select name="state" id="state" class="form-select" data-selected="{{ $license->state }}">
+                                <option value="">Select State</option>
+                                @if($license->state)
+                                    <option value="{{ $license->state }}" selected>{{ $license->state }}</option>
+                                @endif
+                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
-                            <label for="store_zip_code" class="form-label">Store Zip Code</label>
-                            <x-input name="store_zip_code" type="text" placeholder="Enter store zip code" value="{{ old('store_zip_code', $license->store_zip_code) }}" />
+                            <label for="city" class="form-label">City</label>
+                            <x-select name="city" id="city" class="form-select" data-selected="{{ $license->city }}">
+                                <option value="">Select City</option>
+                                @if($license->city)
+                                    <option value="{{ $license->city }}" selected>{{ $license->city }}</option>
+                                @endif
+                            </x-select>
+                        </div>
+                        <div class="col-lg-6 mb-3">
+                            <label for="zip_code" class="form-label">Zip Code</label>
+                            <x-input name="zip_code" type="text" placeholder="Enter zip code" value="{{ old('zip_code', $license->zip_code) }}" />
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="store_phone" class="form-label">Store Phone</label>
@@ -118,66 +134,33 @@
         </div>
 
         <div class="my-2">
-            <x-card title="Location Details" icon="bi bi-geo-alt-fill">
-                <div class="form-group">
-                    <div class="row">
-                        <div class="col-lg-6 mb-3">
-                            <label for="country" class="form-label">Country</label>
-                            <select name="country" id="country" class="form-select" data-selected="{{ $license->country }}">
-                                <option value="">Select Country</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-6 mb-3">
-                            <label for="state" class="form-label">State</label>
-                            <select name="state" id="state" class="form-select" data-selected="{{ $license->state }}">
-                                <option value="">Select State</option>
-                                @if($license->state)
-                                    <option value="{{ $license->state }}" selected>{{ $license->state }}</option>
-                                @endif
-                            </select>
-                        </div>
-                        <div class="col-lg-6 mb-3">
-                            <label for="city" class="form-label">City</label>
-                            <select name="city" id="city" class="form-select" data-selected="{{ $license->city }}">
-                                <option value="">Select City</option>
-                                @if($license->city)
-                                    <option value="{{ $license->city }}" selected>{{ $license->city }}</option>
-                                @endif
-                            </select>
-                        </div>
-                        <div class="col-lg-6 mb-3">
-                            <label for="zip_code" class="form-label">Zip Code</label>
-                            <x-input name="zip_code" type="text" placeholder="Enter zip code" value="{{ old('zip_code', $license->zip_code) }}" />
-                        </div>
-                    </div>
-                </div>
-            </x-card>
-        </div>
-
-        <div class="my-2">
             <x-card title="Permit / License Details" icon="bi bi-file-earmark-text-fill">
                 <div class="form-group">
                     <div class="row">
                         <div class="col-lg-6 mb-3">
                             <label for="permit_type" class="form-label">Permit Type</label>
+                            @php
+                                $permit_types = \App\Models\PermitType::where('is_active', 1)->get();
+                            @endphp
                             <x-select name="permit_type" placeholder="Select Permit Type">
-                                <option value="business_license" {{ $license->permit_type == 'business_license' ? 'selected' : '' }}>Business License</option>
-                                <option value="health_permit" {{ $license->permit_type == 'health_permit' ? 'selected' : '' }}>Health Permit</option>
-                                <option value="fire_permit" {{ $license->permit_type == 'fire_permit' ? 'selected' : '' }}>Fire Permit</option>
-                                <option value="zoning_permit" {{ $license->permit_type == 'zoning_permit' ? 'selected' : '' }}>Zoning Permit</option>
-                                <option value="building_permit" {{ $license->permit_type == 'building_permit' ? 'selected' : '' }}>Building Permit</option>
-                                <option value="liquor_license" {{ $license->permit_type == 'liquor_license' ? 'selected' : '' }}>Liquor License</option>
-                                <option value="food_service" {{ $license->permit_type == 'food_service' ? 'selected' : '' }}>Food Service License</option>
-                                <option value="other" {{ $license->permit_type == 'other' ? 'selected' : '' }}>Other</option>
+                                @forelse ($permit_types as $type)
+                                    <option value="{{ $type->permit_type }}" {{ $license->permit_type == $type->permit_type ? 'selected' : '' }}>{{ $type->permit_type }}</option>
+                                @empty
+                                    <option value="" disabled>No Permit Type Available</option>
+                                @endforelse
                             </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="permit_subtype" class="form-label">Permit Subtype</label>
+                            @php
+                                $subtype = \App\Models\PermitSubType::where('is_active', true)->get();
+                            @endphp
                             <x-select name="permit_subtype" placeholder="Select Permit Subtype">
-                                <option value="new" {{ $license->permit_subtype == 'new' ? 'selected' : '' }}>New</option>
-                                <option value="renewal" {{ $license->permit_subtype == 'renewal' ? 'selected' : '' }}>Renewal</option>
-                                <option value="amendment" {{ $license->permit_subtype == 'amendment' ? 'selected' : '' }}>Amendment</option>
-                                <option value="transfer" {{ $license->permit_subtype == 'transfer' ? 'selected' : '' }}>Transfer</option>
+                                @forelse ($subtype as $stype)
+                                    <option value="{{ $stype->name }}" {{ $license->permit_subtype == $stype->name ? 'selected' : '' }}>{{ $stype->name }}</option>
+                                @empty
+                                    <option value="" disabled>No Permit Subtype Available</option>
+                                @endforelse
                             </x-select>
                         </div>
                     </div>
@@ -191,27 +174,27 @@
                     <div class="row">
                         <div class="col-lg-6 mb-3">
                             <label for="jurisdiction_country" class="form-label">Jurisdiction Country</label>
-                            <select name="jurisdiction_country" class="form-select" id="jurisdiction_country" data-selected="{{ $license->jurisdiction_country }}">
+                            <x-select name="jurisdiction_country" class="form-select" id="jurisdiction_country" data-selected="{{ $license->jurisdiction_country }}">
                                 <option value="">Select Country</option>
-                            </select>
+                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="jurisdiction_state" class="form-label">Jurisdiction State</label>
-                            <select name="jurisdiction_state" class="form-select" id="jurisdiction_state" data-selected="{{ $license->jurisdiction_state }}">
+                            <x-select name="jurisdiction_state" class="form-select" id="jurisdiction_state" data-selected="{{ $license->jurisdiction_state }}">
                                 <option value="">Select State</option>
                                 @if($license->jurisdiction_state)
                                     <option value="{{ $license->jurisdiction_state }}" selected>{{ $license->jurisdiction_state }}</option>
                                 @endif
-                            </select>
+                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="jurisdiction_city" class="form-label">Jurisdiction City</label>
-                            <select name="jurisdiction_city" class="form-select" id="jurisdiction_city" data-selected="{{ $license->jurisdiction_city }}">
+                            <x-select name="jurisdiction_city" class="form-select" id="jurisdiction_city" data-selected="{{ $license->jurisdiction_city }}">
                                 <option value="">Select City</option>
                                 @if($license->jurisdiction_city)
                                     <option value="{{ $license->jurisdiction_city }}" selected>{{ $license->jurisdiction_city }}</option>
                                 @endif
-                            </select>
+                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label for="jurisdiction_federal" class="form-label">Federal</label>
@@ -233,38 +216,6 @@
                         <div class="col-lg-6 mb-3">
                             <label for="expiration_date" class="form-label">Expiration Date</label>
                             <x-input name="expiration_date" type="date" value="{{ old('expiration_date', $license->expiration_date ? $license->expiration_date->format('Y-m-d') : '') }}" />
-                        </div>
-                        <div class="col-lg-6 mb-3">
-                            <label for="renewal_window_open_date" class="form-label">Renewal Window Open Date</label>
-                            <x-input name="renewal_window_open_date" type="date" value="{{ old('renewal_window_open_date', $license->renewal_window_open_date ? $license->renewal_window_open_date->format('Y-m-d') : '') }}" />
-                        </div>
-                        <div class="col-lg-6 mb-3">
-                            <label for="renewal_status" class="form-label">Renewal Status</label>
-                            <x-select name="renewal_status" placeholder="Select Renewal Status">
-                                <option value="monitoring" {{ $license->renewal_status == 'monitoring' ? 'selected' : '' }}>Monitoring (Active)</option>
-                                <option value="billing_window_open" {{ $license->renewal_status == 'billing_window_open' ? 'selected' : '' }}>Billing Window Open</option>
-                                <option value="pending_payment" {{ $license->renewal_status == 'pending_payment' ? 'selected' : '' }}>Pending Payment</option>
-                                <option value="ready_to_submit" {{ $license->renewal_status == 'ready_to_submit' ? 'selected' : '' }}>Ready to Submit</option>
-                                <option value="submitted" {{ $license->renewal_status == 'submitted' ? 'selected' : '' }}>Submitted</option>
-                                <option value="waiting_agency_response" {{ $license->renewal_status == 'waiting_agency_response' ? 'selected' : '' }}>Waiting Agency Response</option>
-                                <option value="additional_info_requested" {{ $license->renewal_status == 'additional_info_requested' ? 'selected' : '' }}>Additional Info Requested</option>
-                                <option value="pending_client_response" {{ $license->renewal_status == 'pending_client_response' ? 'selected' : '' }}>Pending Client Response</option>
-                                <option value="resubmitted" {{ $license->renewal_status == 'resubmitted' ? 'selected' : '' }}>Resubmitted</option>
-                                <option value="approved_completed" {{ $license->renewal_status == 'approved_completed' ? 'selected' : '' }}>Approved / Completed</option>
-                                <option value="failed_closed" {{ $license->renewal_status == 'failed_closed' ? 'selected' : '' }}>Failed / Closed</option>
-                            </x-select>
-                        </div>
-                        <div class="col-lg-6 mb-3">
-                            <label for="billing_status" class="form-label">Billing Status</label>
-                            <x-select name="billing_status" placeholder="Select Billing Status">
-                                <option value="not_invoiced" {{ $license->billing_status == 'not_invoiced' ? 'selected' : '' }}>Not Invoiced</option>
-                                <option value="invoiced" {{ $license->billing_status == 'invoiced' ? 'selected' : '' }}>Invoiced</option>
-                                <option value="payment_pending" {{ $license->billing_status == 'payment_pending' ? 'selected' : '' }}>Payment Pending</option>
-                                <option value="paid_online" {{ $license->billing_status == 'paid_online' ? 'selected' : '' }}>Paid (Online)</option>
-                                <option value="paid_offline" {{ $license->billing_status == 'paid_offline' ? 'selected' : '' }}>Paid (Offline)</option>
-                                <option value="override_approved" {{ $license->billing_status == 'override_approved' ? 'selected' : '' }}>Override Approved</option>
-                                <option value="voided" {{ $license->billing_status == 'voided' ? 'selected' : '' }}>Voided</option>
-                            </x-select>
                         </div>
                         <div class="col-lg-6 mb-3">
                             <label class="form-label" for="submission_confirmation_number">Submission Confirmation Number</label>

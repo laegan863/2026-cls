@@ -76,12 +76,15 @@
                 <x-table>
                     <x-slot:head>
                         <tr>
-                            <th>Client Name</th>
-                            <th>Transaction ID</th>
-                            <th>Permit Type</th>
-                            <th>Location</th>
-                            <th>Renewal</th>
-                            <th>Expiration</th>
+                            <th>Store Name</th>
+                            {{-- <th>Transaction ID</th> --}}
+                            @if(Auth::user()->Role->name !== 'Client')
+                                <th>Permit Type</th>
+                                <th>Sub Permit Type</th>
+                                <th>Location</th>
+                                <th>Renewal</th>
+                                <th>Expiration</th>
+                            @endif
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -91,33 +94,38 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <x-avatar name="{{ $license->client->name ?? 'N/A' }}" size="sm" />
-                                    <span>{{ $license->client->name ?? 'N/A' }}</span>
+                                    <x-avatar name="{{ $license->store_name ?? 'N/A' }}" size="sm" />
+                                    <span>{{ $license->store_name ?? 'N/A' }}</span>
                                 </div>
                             </td>
-                            <td>
+                            {{-- <td>
                                 {{ $license->transaction_id ?? '' }}
-                            </td>
-                            <td>
-                                <x-badge type="primary">{{ ucfirst(str_replace('_', ' ', $license->permit_type ?? 'N/A')) }}</x-badge>
-                            </td>
-                            <td>{{ $license->city ?? '' }}{{ $license->city && $license->state ? ', ' : '' }}{{ $license->state ?? '' }}</td>
-                            <td>
-                                <x-badge type="{{ $license->renewal_status_badge ?? 'secondary' }}">{{ $license->renewal_status_label ?? 'Closed' }}</x-badge>
-                            </td>
-                            <td>
-                                @if($license->expiration_date)
-                                    {{ $license->expiration_date->format('M d, Y') }}
-                                    @php $daysUntil = $license->days_until_expiration; @endphp
-                                    @if($daysUntil < 0)
-                                        <br><small class="text-danger">Expired</small>
-                                    @elseif($daysUntil <= 60)
-                                        <br><small class="text-warning">{{ $daysUntil }} days</small>
+                            </td> --}}
+                            @if(Auth::user()->Role->name !== 'Client')
+                                <td>
+                                    {{ ucfirst(str_replace('_', ' ', $license->permit_type ?? 'N/A')) }}
+                                </td>
+                                <td>
+                                    {{ $license->sub_permit_type ?? 'N/A' }}
+                                </td>
+                                <td>{{ $license->city ?? '' }}{{ $license->city && $license->state ? ', ' : '' }}{{ $license->state ?? '' }}</td>
+                                <td>
+                                    <x-badge type="{{ $license->renewal_status_badge ?? 'secondary' }}">{{ $license->renewal_status_label ?? 'Closed' }}</x-badge>
+                                </td>
+                                <td>
+                                    @if($license->expiration_date)
+                                        {{ $license->expiration_date->format('M d, Y') }}
+                                        @php $daysUntil = $license->days_until_expiration; @endphp
+                                        @if($daysUntil < 0)
+                                            <br><small class="text-danger">Expired</small>
+                                        @elseif($daysUntil <= 60)
+                                            <br><small class="text-warning">{{ $daysUntil }} days</small>
+                                        @endif
+                                    @else
+                                        N/A
                                     @endif
-                                @else
-                                    N/A
-                                @endif
-                            </td>
+                                </td>
+                            @endif
                             <td>
                                 <x-badge type="warning">{{ ucfirst(str_replace('_', ' ', $license->workflow_status_label ?? 'N/A')) }}</x-badge>
                             </td>

@@ -249,9 +249,6 @@ class LicenseController extends Controller
             'fein' => 'nullable|string',
             'store_name' => 'nullable|string',
             'store_address' => 'nullable|string',
-            'store_city' => 'nullable|string',
-            'store_state' => 'nullable|string',
-            'store_zip_code' => 'nullable|string',
             'store_phone' => 'nullable|string',
             'store_email' => 'nullable|email',
             'country' => 'nullable|string',
@@ -266,9 +263,6 @@ class LicenseController extends Controller
             'jurisdiction_federal' => 'nullable|string',
             'agency_name' => 'nullable|string',
             'expiration_date' => 'nullable|date',
-            'renewal_window_open_date' => 'nullable|date',
-            'renewal_status' => 'nullable|string',
-            'billing_status' => 'nullable|string',
             'submission_confirmation_number' => 'nullable|string',
         ]);
 

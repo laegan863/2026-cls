@@ -101,7 +101,7 @@
         </div>
 
     <div class="my-2">
-        <x-card title="Store / Location (Primary Operating Unit)" icon="bi bi-file-earmark-text-fill">
+        <x-card title="Store / Location (Primary Operating Unit)" icon="bi bi-geo-alt-fill">
             <div class="form-group">
                 <div class="row">
                     <div class="col-lg-6 mb-3">
@@ -112,35 +112,6 @@
                         <label for="store_address" class="form-label">Store Address</label>
                         <x-input name="store_address" type="text" placeholder="Enter store address"/>
                     </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="store_city" class="form-label">Store City</label>
-                        <x-input name="store_city" type="text" placeholder="Enter store city"/>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="store_state" class="form-label">Store State</label>
-                        <x-input name="store_state" type="text" placeholder="Enter store state"/>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="store_zip_code" class="form-label">Store Zip Code</label>
-                        <x-input name="store_zip_code" type="text" placeholder="Enter store zip code"/>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="store_phone" class="form-label">Store Phone</label>
-                        <x-input name="store_phone" type="text" placeholder="Enter store phone"/>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <label for="store_email" class="form-label">Store Email</label>
-                        <x-input name="store_email" type="email" placeholder="Enter store email"/>
-                    </div>
-                </div>
-            </div>
-        </x-card>
-    </div>
-
-    <div class="my-2">
-        <x-card title="Location Details" icon="bi bi-geo-alt-fill">
-            <div class="form-group">
-                <div class="row">
                     <div class="col-lg-6 mb-3">
                         <label for="country" class="form-label">Country</label>
                         <x-select name="country" id="country" class="form-select" required>
@@ -162,6 +133,14 @@
                     <div class="col-lg-6 mb-3">
                         <label for="zip_code" class="form-label">Zip Code</label>
                         <x-input name="zip_code" type="text" placeholder="Enter zip code" required/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_phone" class="form-label">Store Phone</label>
+                        <x-input name="store_phone" type="text" placeholder="Enter store phone"/>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <label for="store_email" class="form-label">Store Email</label>
+                        <x-input name="store_email" type="email" placeholder="Enter store email"/>
                     </div>
                 </div>
             </div>
