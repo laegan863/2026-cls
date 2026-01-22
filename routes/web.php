@@ -54,6 +54,7 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
     Route::get('dashboard/details/{type}', [DashboardController::class, 'details'])->name('admin.dashboard.details');
     Route::view('settings', 'files.settings')->name('admin.settings');
     Route::resource('licenses', LicenseController::class)->names('admin.licenses');
+    Route::get('upcoming-renewals', [LicenseController::class, 'upcomingRenewals'])->name('admin.upcoming-renewals.index');
     Route::resource('agency', AgencyController::class)->names('admin.agency');
     Route::post('licenses/{license}/refresh-status', [LicenseController::class, 'refreshStatus'])->name('admin.licenses.refresh-status');
     Route::post('licenses/bulk-refresh', [LicenseController::class, 'bulkRefreshStatus'])->name('admin.licenses.bulk-refresh');

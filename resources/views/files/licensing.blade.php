@@ -26,17 +26,16 @@
 
 
     <div class="row">
-        <div class="col-lg-12">
-            <!-- Filter Section -->
+        <!-- Filter Section -->
             <x-card class="mb-3">
                 <form action="{{ route('admin.licenses.index') }}" method="GET">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label class="form-label small text-muted">Store Name</label>
                             <x-input type="text" name="store_name" placeholder="Search by Store Name" :value="request('store_name')" />
                         </div>
                         @if($role === 'Admin' || $role === 'Agent')
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label class="form-label small text-muted">Client Name</label>
                             <x-select name="client_id">
                                 <option value="">All Clients</option>
@@ -53,17 +52,8 @@
                             </x-select>
                         </div>
                         @endif
-                        <div class="col-md-2">
-                            <label class="form-label small text-muted">Renewal Status</label>
-                            <x-select name="renewal_status">
-                                <option value="">All Status</option>
-                                <option value="open" {{ request('renewal_status') == 'open' ? 'selected' : '' }}>Open</option>
-                                <option value="closed" {{ request('renewal_status') == 'closed' ? 'selected' : '' }}>Closed</option>
-                                <option value="expired" {{ request('renewal_status') == 'expired' ? 'selected' : '' }}>Expired</option>
-                            </x-select>
-                        </div>
                         @if($role === 'Admin' || $role === 'Agent')
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label class="form-label small text-muted">Store Status</label>
                             <x-select name="is_active">
                                 <option value="">All Stores</option>
@@ -72,7 +62,7 @@
                             </x-select>
                         </div>
                         @endif
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="d-flex gap-2">
                                 <x-button type="submit" variant="primary" icon="bi bi-search">Filter</x-button>
                                 <x-button href="{{ route('admin.licenses.index') }}" variant="outline">Clear</x-button>
@@ -81,24 +71,15 @@
                     </div>
                 </form>
             </x-card>
-
-            <x-card title="Store List {{ $role === 'Client' ? '(My Licenses)' : '(All Stores and Licenses)' }}" icon="fas fa-table" class="mb-4" :padding="false">
+        <div class="col-lg-12">
+            <x-card title="Store List {{ $role === 'Client' ? '(My Stores)' : '(All Stores & Licenses)' }}" icon="fas fa-store" class="mb-4" :padding="false">
                 <x-table>
                     <x-slot:head>
                         <tr>
                             <th>Store Name</th>
-                            {{-- <th>Transaction ID</th> --}}
-                            @if(Auth::user()->Role->name !== 'Client')
-                                <th>Permit Type</th>
-                                <th>Sub Permit Type</th>
-                                <th>Location</th>
-                                <th>Renewal</th>
-                                <th>Expiration</th>
-                            @endif
+                            <th>Store Address</th>
                             <th>Status</th>
-                            @if(Auth::user()->Role->name !== 'Client')
                             <th>Actions</th>
-                            @endif
                         </tr>
                     </x-slot:head>
 
@@ -107,104 +88,67 @@
                             <td>
                                 <div class="d-flex align-items-center gap-2">
                                     <x-avatar name="{{ $license->store_name ?? 'N/A' }}" size="sm" />
-                                        @if(Auth::user()->Role->name === 'Client')
-                                            <a href="{{ route('admin.licenses.show', $license) }}" class="">
-                                                <span class="text-dark">{{ $license->store_name ?? 'N/A' }}</span>
-                                            </a>
-                                        @else
-                                            <div>
-                                                <span>{{ $license->store_name ?? 'N/A' }}</span>
-                                                @if($license->is_active == false)
-                                                    <br><x-badge type="secondary">Deactivated</x-badge>
-                                                @endif
-                                            </div>
-                                        @endif
+                                    <a href="{{ route('admin.licenses.show', $license) }}">
+                                        <span class="text-dark fw-medium">{{ $license->store_name ?? 'N/A' }}</span>
+                                    </a>
                                 </div>
                             </td>
-                            {{-- <td>
-                                {{ $license->transaction_id ?? '' }}
-                            </td> --}}
-                            @if(Auth::user()->Role->name !== 'Client')
-                                <td>
-                                    {{ ucfirst(str_replace('_', ' ', $license->permit_type ?? 'N/A')) }}
-                                </td>
-                                <td>
-                                    {{ $license->permit_subtype ?? 'N/A' }}
-                                </td>
-                                <td>{{ $license->city ?? '' }}{{ $license->city && $license->state ? ', ' : '' }}{{ $license->state ?? '' }}</td>
-                                <td>
-                                    <x-badge type="{{ $license->renewal_status_badge ?? 'secondary' }}">{{ $license->renewal_status_label ?? 'Closed' }}</x-badge>
-                                </td>
-                                <td>
-                                    @if($license->expiration_date)
-                                        {{ $license->expiration_date->format('M d, Y') }}
-                                        @php $daysUntil = $license->days_until_expiration; @endphp
-                                        @if($daysUntil < 0)
-                                            <br><small class="text-danger">Expired</small>
-                                        @elseif($daysUntil <= 60)
-                                            <br><small class="text-warning">{{ $daysUntil }} days</small>
-                                        @endif
-                                    @else
-                                        N/A
-                                    @endif
-                                </td>
-                            @endif
                             <td>
-                                @if($license->is_active == false)
-                                    <x-badge type="danger">Deactivated</x-badge>
+                                @php
+                                    $addressParts = array_filter([
+                                        $license->store_address ?? null,
+                                        $license->store_city ?? $license->city ?? null,
+                                        $license->store_state ?? $license->state ?? null,
+                                        $license->store_zip_code ?? $license->zip_code ?? null,
+                                    ]);
+                                @endphp
+                                {{ implode(', ', $addressParts) ?: 'N/A' }}
+                            </td>
+                            <td>
+                                @if($license->is_active == true)
+                                    <x-badge type="success">Active</x-badge>
                                 @else
-                                    <x-badge type="success">{{ ucfirst(str_replace('_', ' ', $license->workflow_status_label ?? 'N/A')) }}</x-badge>
+                                    <x-badge type="danger">Deactivated</x-badge>
                                 @endif
                             </td>
-                            @if(Auth::user()->Role->name !== 'Client')
                             <td>
-                                <x-dropdown align="end">
-                                    <x-slot:trigger>
-                                        <x-icon-button icon="fas fa-ellipsis-v" variant="light" size="sm" />
-                                    </x-slot:trigger>
+                                <div class="d-flex gap-1">
                                     @if(Auth::user()->hasPermission('view'))
-                                    <x-dropdown-item href="{{ route('admin.licenses.show', $license) }}" icon="fas fa-eye">View</x-dropdown-item>
+                                    <x-icon-button href="{{ route('admin.licenses.show', $license) }}" icon="fas fa-eye" variant="primary" size="sm" title="View Details" />
                                     @endif
 
                                     @if(Auth::user()->hasPermission('edit'))
-                                    <x-dropdown-item href="{{ route('admin.licenses.edit', $license) }}" icon="fas fa-edit">Edit</x-dropdown-item>
+                                    <x-icon-button href="{{ route('admin.licenses.edit', $license) }}" icon="fas fa-edit" variant="secondary" size="sm" title="Edit" />
                                     @endif
 
                                     @if(Auth::user()->Role->name === 'Admin')
-                                    <x-dropdown-divider />
                                     <form action="{{ route('admin.licenses.toggle-status', $license) }}" method="POST" style="display: inline;">
                                         @csrf
                                         @method('PATCH')
                                         @if($license->is_active == true)
-                                            <button type="submit" class="dropdown-item text-warning" onclick="return confirm('Are you sure you want to deactivate this store?')">
-                                                <i class="fas fa-ban me-2"></i> Deactivate Store
-                                            </button>
+                                            <x-icon-button type="submit" icon="fas fa-ban" variant="warning" size="sm" title="Deactivate Store" onclick="return confirm('Are you sure you want to deactivate this store?')" />
                                         @else
-                                            <button type="submit" class="dropdown-item text-success" onclick="return confirm('Are you sure you want to activate this store?')">
-                                                <i class="fas fa-check-circle me-2"></i> Activate Store
-                                            </button>
+                                            <x-icon-button type="submit" icon="fas fa-check-circle" variant="success" size="sm" title="Activate Store" onclick="return confirm('Are you sure you want to activate this store?')" />
                                         @endif
                                     </form>
                                     @endif
 
                                     @if(Auth::user()->hasPermission('delete'))
-                                    <x-dropdown-divider />
                                     <form action="{{ route('admin.licenses.destroy', $license) }}" method="POST" style="display: inline;">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to delete this license?')">Delete</button>
+                                        <x-icon-button type="submit" icon="fas fa-trash" variant="danger" size="sm" title="Delete" onclick="return confirm('Are you sure you want to delete this store?')" />
                                     </form>
                                     @endif
-                                </x-dropdown>
+                                </div>
                             </td>
-                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-4">
+                            <td colspan="4" class="text-center py-4">
                                 <div class="text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    No licenses found. <a href="{{ route('admin.licenses.create') }}">Add your first license</a>
+                                    No stores found. <a href="{{ route('admin.licenses.create') }}">Add your first store</a>
                                 </div>
                             </td>
                         </tr>

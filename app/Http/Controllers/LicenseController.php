@@ -65,6 +65,54 @@ class LicenseController extends Controller
     }
 
     /**
+     * Display a listing of upcoming renewals.
+     */
+    public function upcomingRenewals(Request $request)
+    {
+        $user = Auth::user();
+        
+        // Check permission - user needs 'view' permission for Licensing module
+        if (!$user->hasPermission('view')) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        $role = $user->Role->name;
+        
+        // Build query for all renewals - prioritize those expiring within 2 months
+        // Uses CASE to sort: renewable stores (within 2 months) first, then others
+        $twoMonthsFromNow = now()->addMonths(2)->format('Y-m-d');
+        $query = License::with(['client', 'latestPayment.assignedAgent'])
+            ->where('is_active', true)
+            ->whereNotNull('expiration_date');
+        
+        // Admin and Agent can see all, Client can only see their own
+        if ($role !== 'Admin' && $role !== 'Agent') {
+            $query->where('client_id', Auth::id());
+        }
+        
+        // Apply filters
+        if ($request->filled('store_name')) {
+            $query->where('store_name', 'like', '%' . $request->store_name . '%');
+        }
+        
+        if ($request->filled('client_id') && ($role === 'Admin' || $role === 'Agent')) {
+            $query->where('client_id', $request->client_id);
+        }
+        
+        if ($request->filled('renewal_status')) {
+            $query->where('renewal_status', $request->renewal_status);
+        }
+        
+        // Order by: renewable stores first (expiring within 2 months), then by expiration date
+        $upcomingRenewals = $query
+            ->orderByRaw("CASE WHEN expiration_date <= ? THEN 0 ELSE 1 END", [$twoMonthsFromNow])
+            ->orderBy('expiration_date', 'asc')
+            ->get();
+        
+        return view('files.upcoming-renewals', compact('upcomingRenewals'));
+    }
+
+    /**
      * Show the form for creating a new license.
      */
     public function create()
