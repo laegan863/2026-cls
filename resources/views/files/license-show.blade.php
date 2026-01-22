@@ -283,6 +283,23 @@
                     <label class="form-label fw-bold">Submission Confirmation Number</label>
                     <p class="form-control-plaintext">{{ $license->submission_confirmation_number ?? 'N/A' }}</p>
                 </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-file-earmark-check me-1"></i>Renewal Evidence Document
+                    </label>
+                    <p class="form-control-plaintext">
+                        @if($license->renewal_evidence_file)
+                            <a href="{{ Storage::url($license->renewal_evidence_file) }}" 
+                               target="_blank" 
+                               class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-download me-1"></i>Download Evidence File
+                            </a>
+                            <small class="text-muted d-block mt-1">{{ basename($license->renewal_evidence_file) }}</small>
+                        @else
+                            <span class="text-muted">No evidence file uploaded</span>
+                        @endif
+                    </p>
+                </div>
             </div>
         </x-card>
     </div>
@@ -336,7 +353,7 @@
 <div class="modal fade" id="extendExpirationModal" tabindex="-1" aria-labelledby="extendExpirationModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('admin.licenses.extend-expiration', $license) }}" method="POST">
+            <form action="{{ route('admin.licenses.extend-expiration', $license) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="extendExpirationModalLabel">
@@ -373,6 +390,32 @@
                             <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(36)">+3 Years</x-button>
                         </div>
                     </div>
+
+                    <!-- Renewal Evidence File Upload -->
+                    <div class="mb-3">
+                        <label for="renewal_evidence_file" class="form-label fw-bold">
+                            <i class="bi bi-file-earmark-arrow-up me-1"></i>Renewal Evidence Document
+                        </label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="renewal_evidence_file" 
+                               name="renewal_evidence_file"
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                        <div class="form-text">Upload a copy of the renewal certificate or evidence document (PDF, JPG, PNG, DOC). This will be available for the client to view and download.</div>
+                    </div>
+
+                    @if($license->renewal_evidence_file)
+                    <div class="alert alert-success d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-file-earmark-check me-2"></i>
+                            <strong>Current Evidence File:</strong> 
+                            <span class="ms-1">{{ basename($license->renewal_evidence_file) }}</span>
+                        </div>
+                        <a href="{{ Storage::url($license->renewal_evidence_file) }}" target="_blank" class="btn btn-sm btn-outline-success" download>
+                            <i class="bi bi-download me-1"></i>Download
+                        </a>
+                    </div>
+                    @endif
                 </div>
                 <div class="modal-footer">
                     <x-button type="button" variant="secondary" data-bs-dismiss="modal">Cancel</x-button>

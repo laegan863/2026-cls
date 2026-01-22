@@ -106,7 +106,7 @@
                                     {{ ucfirst(str_replace('_', ' ', $license->permit_type ?? 'N/A')) }}
                                 </td>
                                 <td>
-                                    {{ $license->sub_permit_type ?? 'N/A' }}
+                                    {{ $license->permit_subtype ?? 'N/A' }}
                                 </td>
                                 <td>{{ $license->city ?? '' }}{{ $license->city && $license->state ? ', ' : '' }}{{ $license->state ?? '' }}</td>
                                 <td>

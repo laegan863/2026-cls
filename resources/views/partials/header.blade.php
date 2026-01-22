@@ -235,6 +235,7 @@ const NotificationSystem = {
             'license_rejected': 'License Rejected',
             'license_expiring': 'License Expiring Soon',
             'license_expired': 'License Expired',
+            'license_renewed': 'License Renewed',
             'renewal_open': 'Renewal Window Open',
         };
         

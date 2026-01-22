@@ -40,6 +40,7 @@ class License extends Model
         'renewal_status',
         'billing_status',
         'submission_confirmation_number',
+        'renewal_evidence_file',
         'status',
         'workflow_status',
         'validated_at',

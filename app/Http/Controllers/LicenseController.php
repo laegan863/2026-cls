@@ -7,10 +7,13 @@ use App\Models\User;
 use App\Models\LicenseRequirement;
 use App\Notifications\LicenseCreatedNotification;
 use App\Notifications\LicenseStatusNotification;
+use App\Notifications\LicenseRenewedNotification;
 use App\Notifications\RenewalStatusNotification;
 use App\Notifications\BillingStatusNotification;
+use App\Mail\LicenseRenewedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -409,13 +412,28 @@ class LicenseController extends Controller
 
         $validated = $request->validate([
             'new_expiration_date' => 'required|date|after:today',
+            'renewal_evidence_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
         ]);
 
         $oldExpiration = $license->expiration_date ? $license->expiration_date->format('M d, Y') : 'N/A';
         
+        // Handle file upload
+        $renewalEvidencePath = $license->renewal_evidence_file;
+        if ($request->hasFile('renewal_evidence_file')) {
+            // Delete old file if exists
+            if ($license->renewal_evidence_file && Storage::disk('public')->exists($license->renewal_evidence_file)) {
+                Storage::disk('public')->delete($license->renewal_evidence_file);
+            }
+            
+            $file = $request->file('renewal_evidence_file');
+            $filename = 'license_' . $license->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $renewalEvidencePath = $file->storeAs('renewal_evidence', $filename, 'public');
+        }
+
         // Update the expiration date
         $license->update([
             'expiration_date' => $validated['new_expiration_date'],
+            'renewal_evidence_file' => $renewalEvidencePath,
             'workflow_status' => License::WORKFLOW_ACTIVE,
             'renewal_status' => License::RENEWAL_CLOSED,
             'billing_status' => License::BILLING_CLOSED,
@@ -426,9 +444,37 @@ class LicenseController extends Controller
 
         $newExpiration = $license->expiration_date->format('M d, Y');
 
+        // Send notification to client user (bell notification + email)
+        if ($license->client) {
+            $license->client->notify(new LicenseRenewedNotification(
+                $license,
+                $newExpiration,
+                $renewalEvidencePath
+            ));
+        }
+
+        // Also send email to the license's billing email(s) if different from client email
+        if ($license->email) {
+            // Handle multiple emails (comma-separated)
+            $billingEmails = array_map('trim', explode(',', $license->email));
+            foreach ($billingEmails as $billingEmail) {
+                if (filter_var($billingEmail, FILTER_VALIDATE_EMAIL)) {
+                    // Skip if it's the same as client email to avoid duplicate
+                    if ($license->client && $license->client->email === $billingEmail) {
+                        continue;
+                    }
+                    Mail::to($billingEmail)->send(new LicenseRenewedMail(
+                        $license,
+                        $newExpiration,
+                        $renewalEvidencePath
+                    ));
+                }
+            }
+        }
+
         return redirect()
             ->route('admin.licenses.show', $license)
-            ->with('success', "License extended! Previous expiration: {$oldExpiration} → New expiration: {$newExpiration}");
+            ->with('success', "License extended! Previous expiration: {$oldExpiration} → New expiration: {$newExpiration}. Email notification sent to client.");
     }
 
     /**
