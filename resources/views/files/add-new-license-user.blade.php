@@ -154,28 +154,22 @@
                     <div class="col-lg-6 mb-3">
                         <label for="permit_type" class="form-label">Permit Type</label>
                         @php
-                            $permit_types = \App\Models\PermitType::where('is_active', 1)->get();
+                            $permit_types = \App\Models\PermitType::with('activeSubPermits')->where('is_active', 1)->get();
                         @endphp
-                        <x-select name="permit_type" placeholder="Select Permit Type" required>
+                        <x-select name="permit_type" id="permit_type" placeholder="Select Permit Type" required>
                             @forelse ($permit_types as $type)
-                                <option value="{{ $type->permit_type }}">{{ $type->permit_type }}</option>
+                                <option value="{{ $type->permit_type }}" data-id="{{ $type->id }}">{{ $type->permit_type }}</option>
                             @empty
                                 <option value="" disabled>No Permit Type Available</option>
                             @endforelse
                         </x-select>
                     </div>
                     <div class="col-lg-6 mb-3">
-                        <label for="permit_subtype" class="form-label">Permit Subtype</label>
-                        @php
-                            $subtype = \App\Models\PermitSubType::where('is_active', true)->get();
-                        @endphp
-                        <x-select name="permit_subtype" placeholder="Select Permit Subtype">
-                            @forelse ($subtype as $stype)
-                                <option value="{{ $stype->name }}">{{ $stype->name }}</option>  
-                            @empty
-                                <option value="" disabled>No Permit Subtype Available</option>
-                            @endforelse
+                        <label for="permit_subtype" class="form-label">Permit Subtype <span class="text-muted">(Optional)</span></label>
+                        <x-select name="permit_subtype" id="permit_subtype" placeholder="Select Permit Subtype">
+                            <option value="">-- Select Permit Type First --</option>
                         </x-select>
+                        <small class="text-muted">Sub-permits are optional and based on the selected permit type</small>
                     </div>
                     <div class="col-lg-6 mb-3">
                         <label for="jurisdiction_country" class="form-label">Jurisdiction Country</label>
@@ -315,6 +309,44 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = this.value.replace(/\D/g, '').slice(0, 9);
         });
     }
+
+    // Permit Type to Sub-Permit mapping
+    const permitTypesData = @json($permit_types->mapWithKeys(function($type) {
+        return [$type->id => [
+            'name' => $type->permit_type,
+            'subPermits' => $type->activeSubPermits->map(function($sub) {
+                return ['id' => $sub->id, 'name' => $sub->name];
+            })
+        ]];
+    }));
+
+    const permitTypeSelect = document.getElementById('permit_type');
+    const permitSubtypeSelect = document.getElementById('permit_subtype');
+
+    // Handle permit type change
+    permitTypeSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const permitTypeId = selectedOption.getAttribute('data-id');
+        
+        // Clear sub-permits dropdown
+        permitSubtypeSelect.innerHTML = '<option value="">-- No Sub-Permit --</option>';
+        
+        if (permitTypeId && permitTypesData[permitTypeId]) {
+            const subPermits = permitTypesData[permitTypeId].subPermits;
+            
+            if (subPermits && subPermits.length > 0) {
+                permitSubtypeSelect.innerHTML = '<option value="">-- Select Sub-Permit (Optional) --</option>';
+                subPermits.forEach(function(subPermit) {
+                    const option = document.createElement('option');
+                    option.value = subPermit.name;
+                    option.textContent = subPermit.name;
+                    permitSubtypeSelect.appendChild(option);
+                });
+            } else {
+                permitSubtypeSelect.innerHTML = '<option value="">-- No Sub-Permits Available --</option>';
+            }
+        }
+    });
 
     const API_BASE = 'https://api.countrystatecity.in/v1';
     const API_KEY = 'NHhvOEcyWk50N2Vna3VFTE00bFp3MjFKR0ZEOUhkZlg4RTk1MlJlaA==';

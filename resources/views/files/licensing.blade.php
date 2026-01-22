@@ -14,7 +14,7 @@
                 <x-button type="submit" variant="primary" icon="bi bi-arrow-clockwise">Bulk Refresh Status</x-button>
             </form>
         @endif
-        <x-button href="{{ route('admin.licenses.create') }}" variant="gold" icon="bi bi-plus-lg">Add New</x-button>
+        <x-button href="{{ route('admin.licenses.create') }}" variant="gold" icon="bi bi-plus-lg">Add New Store</x-button>
     </x-page-header>
 
     @if(session('success'))
@@ -86,7 +86,9 @@
                                 <th>Expiration</th>
                             @endif
                             <th>Status</th>
+                            @if(Auth::user()->Role->name !== 'Client')
                             <th>Actions</th>
+                            @endif
                         </tr>
                     </x-slot:head>
 
@@ -95,7 +97,13 @@
                             <td>
                                 <div class="d-flex align-items-center gap-2">
                                     <x-avatar name="{{ $license->store_name ?? 'N/A' }}" size="sm" />
-                                    <span>{{ $license->store_name ?? 'N/A' }}</span>
+                                        @if(Auth::user()->Role->name === 'Client')
+                                            <a href="{{ route('admin.licenses.show', $license) }}" class="">
+                                                <span class="text-dark">{{ $license->store_name ?? 'N/A' }}</span>
+                                            </a>
+                                        @else
+                                            <span>{{ $license->store_name ?? 'N/A' }}</span>
+                                        @endif
                                 </div>
                             </td>
                             {{-- <td>
@@ -129,6 +137,7 @@
                             <td>
                                 <x-badge type="warning">{{ ucfirst(str_replace('_', ' ', $license->workflow_status_label ?? 'N/A')) }}</x-badge>
                             </td>
+                            @if(Auth::user()->Role->name !== 'Client')
                             <td>
                                 <x-dropdown align="end">
                                     <x-slot:trigger>
@@ -152,6 +161,7 @@
                                     @endif
                                 </x-dropdown>
                             </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>

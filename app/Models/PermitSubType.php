@@ -10,6 +10,7 @@ class PermitSubType extends Model
     use HasFactory;
 
     protected $fillable = [
+        'permit_type_id',
         'name',
         'is_active',
     ];
@@ -17,4 +18,12 @@ class PermitSubType extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Get the parent permit type.
+     */
+    public function permitType()
+    {
+        return $this->belongsTo(PermitType::class);
+    }
 }

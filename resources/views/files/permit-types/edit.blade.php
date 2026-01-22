@@ -26,6 +26,20 @@
                         <x-checkbox name="is_active" value="1" :checked="old('is_active', $permitType->is_active)" label="Active" />
                     </div>
 
+                    <hr class="my-4">
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Sub-Permits (Optional)</h6>
+                            <x-button type="button" variant="outline-primary" size="sm" icon="bi bi-plus-lg" onclick="addSubPermit()">Add Sub-Permit</x-button>
+                        </div>
+                        <p class="text-muted small">Add optional sub-permits under this permit type.</p>
+                        
+                        <div id="sub-permits-container">
+                            <!-- Existing sub-permits will be loaded here -->
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2">
                         <x-button type="submit" variant="gold" icon="bi bi-check-lg">Update Permit Type</x-button>
                         <x-button href="{{ route('admin.permit-types.index') }}" variant="outline">Cancel</x-button>
@@ -35,3 +49,60 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+let subPermitCounter = 0;
+
+function addSubPermit(id = '', name = '', isActive = true) {
+    const container = document.getElementById('sub-permits-container');
+    const index = subPermitCounter++;
+    
+    const html = `
+        <div class="card mb-2" id="sub-permit-${index}">
+            <div class="card-body py-2 px-3">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <input type="hidden" name="sub_permits[${index}][id]" value="${id}">
+                        <input type="text" class="form-control form-control-sm" 
+                               name="sub_permits[${index}][name]" 
+                               placeholder="Sub-permit name" 
+                               value="${name}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" 
+                                   name="sub_permits[${index}][is_active]" 
+                                   id="sub_permit_active_${index}" 
+                                   value="1" ${isActive ? 'checked' : ''}>
+                            <label class="form-check-label" for="sub_permit_active_${index}">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeSubPermit(${index})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+function removeSubPermit(index) {
+    const element = document.getElementById(`sub-permit-${index}`);
+    if (element) {
+        element.remove();
+    }
+}
+
+// Load existing sub-permits on page load
+document.addEventListener('DOMContentLoaded', function() {
+    @foreach($permitType->subPermits as $subPermit)
+        addSubPermit('{{ $subPermit->id }}', '{{ addslashes($subPermit->name) }}', {{ $subPermit->is_active ? 'true' : 'false' }});
+    @endforeach
+});
+</script>
+@endpush

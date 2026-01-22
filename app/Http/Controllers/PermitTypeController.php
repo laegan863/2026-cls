@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PermitType;
+use App\Models\PermitSubType;
 use Illuminate\Http\Request;
 
 class PermitTypeController extends Controller
@@ -12,7 +13,7 @@ class PermitTypeController extends Controller
      */
     public function index()
     {
-        $permitTypes = PermitType::latest()->get();
+        $permitTypes = PermitType::with('subPermits')->latest()->get();
         return view('files.permit-types.index', compact('permitTypes'));
     }
 
@@ -32,12 +33,27 @@ class PermitTypeController extends Controller
         $validated = $request->validate([
             'permit_type' => 'required|string|max:255',
             'is_active' => 'boolean',
+            'sub_permits' => 'nullable|array',
+            'sub_permits.*.name' => 'required|string|max:255',
+            'sub_permits.*.is_active' => 'boolean',
         ]);
 
-        PermitType::create([
+        $permitType = PermitType::create([
             'permit_type' => $validated['permit_type'],
             'is_active' => $request->has('is_active'),
         ]);
+
+        // Create sub-permits if provided
+        if ($request->has('sub_permits')) {
+            foreach ($request->sub_permits as $subPermit) {
+                if (!empty($subPermit['name'])) {
+                    $permitType->subPermits()->create([
+                        'name' => $subPermit['name'],
+                        'is_active' => isset($subPermit['is_active']),
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('admin.permit-types.index')
             ->with('success', 'Permit Type created successfully.');
@@ -48,6 +64,7 @@ class PermitTypeController extends Controller
      */
     public function show(PermitType $permitType)
     {
+        $permitType->load('subPermits');
         return view('files.permit-types.show', compact('permitType'));
     }
 
@@ -56,6 +73,7 @@ class PermitTypeController extends Controller
      */
     public function edit(PermitType $permitType)
     {
+        $permitType->load('subPermits');
         return view('files.permit-types.edit', compact('permitType'));
     }
 
@@ -67,12 +85,46 @@ class PermitTypeController extends Controller
         $validated = $request->validate([
             'permit_type' => 'required|string|max:255',
             'is_active' => 'boolean',
+            'sub_permits' => 'nullable|array',
+            'sub_permits.*.id' => 'nullable|integer',
+            'sub_permits.*.name' => 'required|string|max:255',
+            'sub_permits.*.is_active' => 'boolean',
         ]);
 
         $permitType->update([
             'permit_type' => $validated['permit_type'],
             'is_active' => $request->has('is_active'),
         ]);
+
+        // Handle sub-permits
+        $existingIds = [];
+        if ($request->has('sub_permits')) {
+            foreach ($request->sub_permits as $subPermit) {
+                if (!empty($subPermit['name'])) {
+                    if (!empty($subPermit['id'])) {
+                        // Update existing sub-permit
+                        $existingSubPermit = PermitSubType::find($subPermit['id']);
+                        if ($existingSubPermit && $existingSubPermit->permit_type_id == $permitType->id) {
+                            $existingSubPermit->update([
+                                'name' => $subPermit['name'],
+                                'is_active' => isset($subPermit['is_active']),
+                            ]);
+                            $existingIds[] = $existingSubPermit->id;
+                        }
+                    } else {
+                        // Create new sub-permit
+                        $newSubPermit = $permitType->subPermits()->create([
+                            'name' => $subPermit['name'],
+                            'is_active' => isset($subPermit['is_active']),
+                        ]);
+                        $existingIds[] = $newSubPermit->id;
+                    }
+                }
+            }
+        }
+
+        // Delete sub-permits that were removed
+        $permitType->subPermits()->whereNotIn('id', $existingIds)->delete();
 
         return redirect()->route('admin.permit-types.index')
             ->with('success', 'Permit Type updated successfully.');

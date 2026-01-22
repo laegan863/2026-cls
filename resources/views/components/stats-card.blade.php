@@ -26,14 +26,19 @@
     'change' => null,
     'trend' => null,
     'variant' => 'default',
+    'href' => null,
 ])
 
 @php
     $cardClass = 'stats-card';
     if ($variant === 'primary') $cardClass .= ' primary';
     if ($variant === 'gold') $cardClass .= ' gold';
+    if ($href) $cardClass .= ' clickable';
 @endphp
 
+@if($href)
+<a href="{{ $href }}" class="text-decoration-none">
+@endif
 <div {{ $attributes->merge(['class' => $cardClass]) }}>
     <div class="stats-card-header">
         @if($icon)
@@ -59,3 +64,6 @@
     
     {{ $slot }}
 </div>
+@if($href)
+</a>
+@endif

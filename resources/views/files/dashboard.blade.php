@@ -15,12 +15,20 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
+    .stats-card.clickable {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .stats-card.clickable:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
 </style>
 @endpush
 
 @section('content')
     <!-- Page Header -->
-    <x-page-header title="Dashboard" subtitle="{{ Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open') ? 'Welcome back! Here\'s your renewal queue overview.' : 'View your payment and renewal transactions.' }}">
+    <x-page-header title="Dashboard" subtitle="{{ Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open') ? 'Welcome back! Here\'s your renewal queue overview.' : 'Welcome back! Here\'s your store and license overview.' }}">
         @if(Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open'))
         <form action="{{ route('admin.licenses.bulk-refresh') }}" method="POST" class="d-inline">
             @csrf
@@ -29,36 +37,197 @@
         @endif
     </x-page-header>
 
-    @if(Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open'))
-    <!-- Stats Overview Cards -->
+    @if($isClient ?? false)
+    <!-- Client Dashboard Stats -->
     <div class="row g-4 mb-4">
-        <div class="col-12 col-sm-6 col-xl-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Items Needing Attention" 
+                value="{{ $clientStats['items_needing_attention'] ?? 0 }}" 
+                icon="bi bi-bell-fill"
+                :change="($clientStats['items_needing_attention'] ?? 0) > 0 ? 'Action required' : 'All clear'"
+                :trend="($clientStats['items_needing_attention'] ?? 0) > 0 ? 'down' : 'up'"
+                variant="gold"
+                href="{{ route('admin.dashboard.details', 'items-needing-attention') }}"
+            />
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-3">
             <x-stats-card 
                 title="Overdue" 
                 value="{{ $dueDateStats['overdue'] ?? 0 }}" 
                 icon="bi bi-exclamation-triangle"
                 :change="($dueDateStats['overdue'] ?? 0) > 0 ? 'Action required' : 'None overdue'"
                 :trend="($dueDateStats['overdue'] ?? 0) > 0 ? 'down' : 'up'"
+                href="{{ route('admin.dashboard.details', 'overdue') }}"
             />
         </div>
         
-        <div class="col-12 col-sm-6 col-xl-4">
+        <div class="col-12 col-sm-6 col-xl-3">
             <x-stats-card 
                 title="Active Licenses" 
                 value="{{ $dueDateStats['active'] ?? 0 }}" 
                 icon="bi bi-check-circle"
                 change="In good standing"
                 trend="up"
+                href="{{ route('admin.dashboard.details', 'active') }}"
             />
         </div>
-        
-        <div class="col-12 col-sm-6 col-xl-4">
+
+        <div class="col-12 col-sm-6 col-xl-3">
             <x-stats-card 
                 title="Renewal Open" 
                 value="{{ $renewalStatusStats['open'] ?? 0 }}" 
                 icon="bi bi-arrow-repeat"
                 change="In renewal window"
                 trend="neutral"
+                href="{{ route('admin.dashboard.details', 'renewal-open') }}"
+            />
+        </div>
+    </div>
+
+    <!-- Client Stats Row 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="My Stores" 
+                value="{{ $clientStats['total_stores'] ?? 0 }}" 
+                icon="bi bi-shop"
+                change="Registered stores"
+                trend="neutral"
+                variant="primary"
+                href="{{ route('admin.dashboard.details', 'my-stores') }}"
+            />
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="My Licenses" 
+                value="{{ $clientStats['total_licenses'] ?? 0 }}" 
+                icon="bi bi-file-earmark-text"
+                change="Total licenses"
+                trend="neutral"
+                href="{{ route('admin.dashboard.details', 'my-licenses') }}"
+            />
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Due This Week" 
+                value="{{ $dueDateStats['due_this_week'] ?? 0 }}" 
+                icon="bi bi-calendar-week"
+                change="Expiring soon"
+                :trend="($dueDateStats['due_this_week'] ?? 0) > 0 ? 'down' : 'neutral'"
+                href="{{ route('admin.dashboard.details', 'due-this-week') }}"
+            />
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Due This Month" 
+                value="{{ $dueDateStats['due_this_month'] ?? 0 }}" 
+                icon="bi bi-calendar-event"
+                change="Expiring within 30 days"
+                :trend="($dueDateStats['due_this_month'] ?? 0) > 0 ? 'down' : 'neutral'"
+                href="{{ route('admin.dashboard.details', 'due-this-month') }}"
+            />
+        </div>
+    </div>
+    @endif
+
+    @if(Auth::user()->hasPermission('view-overdue-active-licenses-and-renewal-open'))
+    <!-- Stats Overview Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Overdue" 
+                value="{{ $dueDateStats['overdue'] ?? 0 }}" 
+                icon="bi bi-exclamation-triangle"
+                :change="($dueDateStats['overdue'] ?? 0) > 0 ? 'Action required' : 'None overdue'"
+                :trend="($dueDateStats['overdue'] ?? 0) > 0 ? 'down' : 'up'"
+                href="{{ route('admin.dashboard.details', 'overdue') }}"
+            />
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Active Licenses" 
+                value="{{ $dueDateStats['active'] ?? 0 }}" 
+                icon="bi bi-check-circle"
+                change="In good standing"
+                trend="up"
+                href="{{ route('admin.dashboard.details', 'active') }}"
+            />
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Renewal Open" 
+                value="{{ $renewalStatusStats['open'] ?? 0 }}" 
+                icon="bi bi-arrow-repeat"
+                change="In renewal window"
+                trend="neutral"
+                href="{{ route('admin.dashboard.details', 'renewal-open') }}"
+            />
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Due This Week" 
+                value="{{ $dueDateStats['due_this_week'] ?? 0 }}" 
+                icon="bi bi-calendar-week"
+                change="Expiring soon"
+                :trend="($dueDateStats['due_this_week'] ?? 0) > 0 ? 'down' : 'neutral'"
+                href="{{ route('admin.dashboard.details', 'due-this-week') }}"
+            />
+        </div>
+    </div>
+
+    <!-- New Users and Stores Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="New Users (This Month)" 
+                value="{{ $newUsersStats['this_month'] ?? 0 }}" 
+                icon="bi bi-person-plus"
+                change="Total: {{ $newUsersStats['total'] ?? 0 }} clients"
+                trend="up"
+                variant="primary"
+                href="{{ route('admin.dashboard.details', 'new-users') }}"
+            />
+        </div>
+        
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="New Stores (This Month)" 
+                value="{{ $newStoresStats['this_month'] ?? 0 }}" 
+                icon="bi bi-shop"
+                change="Total: {{ $newStoresStats['total'] ?? 0 }} stores"
+                trend="up"
+                variant="gold"
+                href="{{ route('admin.dashboard.details', 'new-stores') }}"
+            />
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Due This Month" 
+                value="{{ $dueDateStats['due_this_month'] ?? 0 }}" 
+                icon="bi bi-calendar-event"
+                change="Expiring within 30 days"
+                :trend="($dueDateStats['due_this_month'] ?? 0) > 0 ? 'down' : 'neutral'"
+                href="{{ route('admin.dashboard.details', 'due-this-month') }}"
+            />
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <x-stats-card 
+                title="Renewal Expired" 
+                value="{{ $renewalStatusStats['expired'] ?? 0 }}" 
+                icon="bi bi-x-circle"
+                change="Needs attention"
+                :trend="($renewalStatusStats['expired'] ?? 0) > 0 ? 'down' : 'up'"
+                href="{{ route('admin.dashboard.details', 'renewal-expired') }}"
             />
         </div>
     </div>

@@ -23,6 +23,7 @@
                         <tr>
                             <th>#</th>
                             <th>Permit Type</th>
+                            <th>Sub-Permits</th>
                             <th>Status</th>
                             <th>Created At</th>
                             <th>Actions</th>
@@ -36,6 +37,15 @@
                                 <strong>{{ $permitType->permit_type }}</strong>
                             </td>
                             <td>
+                                @if($permitType->subPermits->count() > 0)
+                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="{{ $permitType->subPermits->pluck('name')->join(', ') }}">
+                                        {{ $permitType->subPermits->count() }} sub-permit(s)
+                                    </span>
+                                @else
+                                    <span class="text-muted">None</span>
+                                @endif
+                            </td>
+                            <td>
                                 @if($permitType->is_active)
                                     <x-badge variant="success">Active</x-badge>
                                 @else
@@ -47,7 +57,7 @@
                                 <div class="d-flex gap-1">
                                     <x-button href="{{ route('admin.permit-types.show', $permitType) }}" variant="outline-info" size="sm" icon="bi bi-eye" title="View"></x-button>
                                     <x-button href="{{ route('admin.permit-types.edit', $permitType) }}" variant="outline-warning" size="sm" icon="bi bi-pencil" title="Edit"></x-button>
-                                    <form action="{{ route('admin.permit-types.destroy', $permitType) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this permit type?')">
+                                    <form action="{{ route('admin.permit-types.destroy', $permitType) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this permit type? This will also delete all associated sub-permits.')">
                                         @csrf
                                         @method('DELETE')
                                         <x-button type="submit" variant="outline-danger" size="sm" icon="bi bi-trash" title="Delete"></x-button>
@@ -57,7 +67,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-4">
+                            <td colspan="6" class="text-center py-4">
                                 <x-empty-state 
                                     icon="bi bi-file-earmark-text" 
                                     title="No permit types found" 
@@ -71,3 +81,14 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+@endpush

@@ -39,5 +39,40 @@
                 </table>
             </x-card>
         </div>
+
+        <div class="col-lg-6">
+            <x-card title="Sub-Permits" icon="bi bi-diagram-3">
+                @if($permitType->subPermits->count() > 0)
+                    <x-table>
+                        <x-slot:head>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                            </tr>
+                        </x-slot:head>
+
+                        @foreach($permitType->subPermits as $index => $subPermit)
+                            <tr>
+                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $subPermit->name }}</td>
+                                <td>
+                                    @if($subPermit->is_active)
+                                        <x-badge variant="success">Active</x-badge>
+                                    @else
+                                        <x-badge variant="danger">Inactive</x-badge>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </x-table>
+                @else
+                    <div class="text-center py-4">
+                        <i class="bi bi-diagram-3 text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2 mb-0">No sub-permits for this permit type.</p>
+                    </div>
+                @endif
+            </x-card>
+        </div>
     </div>
 @endsection

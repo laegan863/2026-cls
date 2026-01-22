@@ -51,6 +51,7 @@ Route::get('/cron/check-licenses/{secret}', function ($secret) {
 // Protected Admin Routes (authenticated users only)
 Route::prefix('admin')->middleware('auth.user')->group(function() {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('dashboard/details/{type}', [DashboardController::class, 'details'])->name('admin.dashboard.details');
     Route::view('settings', 'files.settings')->name('admin.settings');
     Route::resource('licenses', LicenseController::class)->names('admin.licenses');
     Route::resource('agency', AgencyController::class)->names('admin.agency');
