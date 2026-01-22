@@ -31,12 +31,12 @@
             <x-card class="mb-3">
                 <form action="{{ route('admin.licenses.index') }}" method="GET">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted">Transaction ID</label>
-                            <x-input type="text" name="transaction_id" placeholder="Search by Transaction ID" :value="request('transaction_id')" />
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted">Store Name</label>
+                            <x-input type="text" name="store_name" placeholder="Search by Store Name" :value="request('store_name')" />
                         </div>
                         @if($role === 'Admin' || $role === 'Agent')
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label small text-muted">Client Name</label>
                             <x-select name="client_id">
                                 <option value="">All Clients</option>
@@ -53,7 +53,7 @@
                             </x-select>
                         </div>
                         @endif
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label small text-muted">Renewal Status</label>
                             <x-select name="renewal_status">
                                 <option value="">All Status</option>
@@ -62,6 +62,16 @@
                                 <option value="expired" {{ request('renewal_status') == 'expired' ? 'selected' : '' }}>Expired</option>
                             </x-select>
                         </div>
+                        @if($role === 'Admin' || $role === 'Agent')
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted">Store Status</label>
+                            <x-select name="is_active">
+                                <option value="">All Stores</option>
+                                <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Active</option>
+                                <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>Deactivated</option>
+                            </x-select>
+                        </div>
+                        @endif
                         <div class="col-md-3">
                             <div class="d-flex gap-2">
                                 <x-button type="submit" variant="primary" icon="bi bi-search">Filter</x-button>
@@ -72,7 +82,7 @@
                 </form>
             </x-card>
 
-            <x-card title="Licenses List {{ $role === 'Client' ? '(My Licenses)' : '(All Licenses)' }}" icon="fas fa-table" class="mb-4" :padding="false">
+            <x-card title="Store List {{ $role === 'Client' ? '(My Licenses)' : '(All Stores and Licenses)' }}" icon="fas fa-table" class="mb-4" :padding="false">
                 <x-table>
                     <x-slot:head>
                         <tr>
@@ -93,7 +103,7 @@
                     </x-slot:head>
 
                     @forelse($licenses as $license)
-                        <tr>
+                        <tr class="{{ $license->is_active == false ? 'table-secondary opacity-75' : '' }}">
                             <td>
                                 <div class="d-flex align-items-center gap-2">
                                     <x-avatar name="{{ $license->store_name ?? 'N/A' }}" size="sm" />
@@ -102,7 +112,12 @@
                                                 <span class="text-dark">{{ $license->store_name ?? 'N/A' }}</span>
                                             </a>
                                         @else
-                                            <span>{{ $license->store_name ?? 'N/A' }}</span>
+                                            <div>
+                                                <span>{{ $license->store_name ?? 'N/A' }}</span>
+                                                @if($license->is_active == false)
+                                                    <br><x-badge type="secondary">Deactivated</x-badge>
+                                                @endif
+                                            </div>
                                         @endif
                                 </div>
                             </td>
@@ -135,7 +150,11 @@
                                 </td>
                             @endif
                             <td>
-                                <x-badge type="warning">{{ ucfirst(str_replace('_', ' ', $license->workflow_status_label ?? 'N/A')) }}</x-badge>
+                                @if($license->is_active == false)
+                                    <x-badge type="danger">Deactivated</x-badge>
+                                @else
+                                    <x-badge type="success">{{ ucfirst(str_replace('_', ' ', $license->workflow_status_label ?? 'N/A')) }}</x-badge>
+                                @endif
                             </td>
                             @if(Auth::user()->Role->name !== 'Client')
                             <td>
@@ -149,6 +168,23 @@
 
                                     @if(Auth::user()->hasPermission('edit'))
                                     <x-dropdown-item href="{{ route('admin.licenses.edit', $license) }}" icon="fas fa-edit">Edit</x-dropdown-item>
+                                    @endif
+
+                                    @if(Auth::user()->Role->name === 'Admin')
+                                    <x-dropdown-divider />
+                                    <form action="{{ route('admin.licenses.toggle-status', $license) }}" method="POST" style="display: inline;">
+                                        @csrf
+                                        @method('PATCH')
+                                        @if($license->is_active == true)
+                                            <button type="submit" class="dropdown-item text-warning" onclick="return confirm('Are you sure you want to deactivate this store?')">
+                                                <i class="fas fa-ban me-2"></i> Deactivate Store
+                                            </button>
+                                        @else
+                                            <button type="submit" class="dropdown-item text-success" onclick="return confirm('Are you sure you want to activate this store?')">
+                                                <i class="fas fa-check-circle me-2"></i> Activate Store
+                                            </button>
+                                        @endif
+                                    </form>
                                     @endif
 
                                     @if(Auth::user()->hasPermission('delete'))

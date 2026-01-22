@@ -43,6 +43,7 @@ class License extends Model
         'renewal_evidence_file',
         'status',
         'workflow_status',
+        'is_active',
         'validated_at',
         'validated_by',
         'approved_at',
@@ -55,6 +56,7 @@ class License extends Model
         'renewal_window_open_date' => 'date',
         'validated_at' => 'datetime',
         'approved_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     // Workflow status constants

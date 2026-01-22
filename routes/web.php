@@ -59,6 +59,7 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
     Route::post('licenses/bulk-refresh', [LicenseController::class, 'bulkRefreshStatus'])->name('admin.licenses.bulk-refresh');
     Route::post('licenses/{license}/extend-expiration', [LicenseController::class, 'extendExpiration'])->name('admin.licenses.extend-expiration');
     Route::post('licenses/{license}/update-status', [LicenseController::class, 'updateStatus'])->name('admin.licenses.update-status');
+    Route::patch('licenses/{license}/toggle-status', [LicenseController::class, 'toggleStatus'])->name('admin.licenses.toggle-status');
     
     Route::prefix('licenses/{license}/requirements')->name('admin.licenses.requirements.')->group(function () {
         Route::get('/', [LicenseRequirementController::class, 'index'])->name('index');

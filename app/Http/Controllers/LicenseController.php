@@ -43,8 +43,8 @@ class LicenseController extends Controller
         }
         
         // Apply filters
-        if ($request->filled('transaction_id')) {
-            $query->where('transaction_id', 'like', '%' . $request->transaction_id . '%');
+        if ($request->filled('store_name')) {
+            $query->where('store_name', 'like', '%' . $request->store_name . '%');
         }
         
         if ($request->filled('client_id') && ($role === 'Admin' || $role === 'Agent')) {
@@ -53,6 +53,10 @@ class LicenseController extends Controller
         
         if ($request->filled('renewal_status')) {
             $query->where('renewal_status', $request->renewal_status);
+        }
+        
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->is_active);
         }
         
         $licenses = $query->latest()->get();
@@ -291,6 +295,26 @@ class LicenseController extends Controller
         $license->delete();
 
         return redirect()->route('admin.licenses.index')->with('success', 'License deleted successfully!');
+    }
+
+    /**
+     * Toggle the active status of a store/license.
+     */
+    public function toggleStatus(License $license)
+    {
+        $user = Auth::user();
+        
+        // Only Admin can toggle store status
+        if ($user->Role->name !== 'Admin') {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $license->is_active = !$license->is_active;
+        $license->save();
+        
+        $status = $license->is_active ? 'activated' : 'deactivated';
+        
+        return redirect()->route('admin.licenses.index')->with('success', "Store has been {$status} successfully!");
     }
 
     /**

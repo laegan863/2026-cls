@@ -23,7 +23,7 @@
         {{ $trigger }}
     </div>
     
-    <ul class="dropdown-menu dropdown-menu-{{ $align }} shadow-lg" style="border: none; border-radius: var(--radius-lg); padding: 0.5rem;">
+    <ul class="dropdown-menu dropdown-menu-{{ $align }} shadow-lg" style="border: none; border-radius: var(--radius-lg); padding: 0.5rem; z-index: 1050;">
         {{ $slot }}
     </ul>
 </div>
