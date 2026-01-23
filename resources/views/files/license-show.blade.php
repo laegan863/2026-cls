@@ -27,6 +27,25 @@
         </div>
     @endif
 
+    <!-- Renewal File Pending Alert -->
+    @php
+        $pendingRenewal = $license->pendingRenewal;
+    @endphp
+    @if($pendingRenewal && $isAdminAgent)
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Renewal #{{ $pendingRenewal->renewal_number }} - File Required!</strong> 
+                    Payment has been completed. Please upload the renewal evidence file to finalize the renewal and extend the expiration date to {{ $pendingRenewal->new_expiration_date->format('M d, Y') }}.
+                </div>
+                <x-button href="{{ route('admin.licenses.payments.show', $license) }}" variant="warning" size="sm" icon="bi bi-arrow-right">
+                    Go to Payments
+                </x-button>
+            </div>
+        </div>
+    @endif
+
     <!-- Workflow Status & Actions Card -->
     <div class="row mb-3">
         <div class="col-12">
@@ -87,8 +106,10 @@
                                 <span class="badge bg-warning text-dark ms-1">Open</span>
                             @endif
                         </x-button>
-                        @if($isAdminAgent && in_array($license->billing_status, ['paid', 'overridden']))
-                            <x-button type="button" variant="warning" icon="bi bi-calendar-plus" data-bs-toggle="modal" data-bs-target="#extendExpirationModal">Extend License</x-button>
+                        @if($isAdminAgent && in_array($license->billing_status, ['paid', 'overridden']) && !$license->license_document)
+                            <x-button type="button" variant="success" icon="bi bi-upload" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
+                                Upload Document
+                            </x-button>
                         @endif
                     </div>
                 </div>
@@ -138,51 +159,47 @@
                     <p class="form-control-plaintext">{{ $license->legal_name ?? 'N/A' }}</p>
                 </div>
                 <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">DBA</label>
+                    <label class="form-label fw-bold">DBA (Assumed Name)</label>
                     <p class="form-control-plaintext">{{ $license->dba ?? 'N/A' }}</p>
                 </div>
                 <div class="col-lg-6 mb-3">
                     <label class="form-label fw-bold">FEIN</label>
                     <p class="form-control-plaintext">{{ $license->fein ?? 'N/A' }}</p>
                 </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Sales Tax ID</label>
+                    <p class="form-control-plaintext">{{ $license->sales_tax_id ?? 'N/A' }}</p>
+                </div>
             </div>
         </x-card>
     </div>
 
     <div class="my-2">
-        <x-card title="Store / Location (Primary Operating Unit)" icon="bi bi-geo-alt-fill">
+        <x-card title="Store Location" icon="bi bi-geo-alt-fill">
             <div class="row">
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Store Name</label>
-                    <p class="form-control-plaintext">{{ $license->store_name ?? 'N/A' }}</p>
+                <div class="col-lg-3 mb-3">
+                    <label class="form-label fw-bold">Street Number</label>
+                    <p class="form-control-plaintext">{{ $license->street_number ?? 'N/A' }}</p>
                 </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Store Address</label>
-                    <p class="form-control-plaintext">{{ $license->store_address ?? 'N/A' }}</p>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Country</label>
-                    <p class="form-control-plaintext">{{ $license->country ?? 'N/A' }}</p>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">State</label>
-                    <p class="form-control-plaintext">{{ $license->state ?? 'N/A' }}</p>
+                <div class="col-lg-9 mb-3">
+                    <label class="form-label fw-bold">Street Name</label>
+                    <p class="form-control-plaintext">{{ $license->street_name ?? 'N/A' }}</p>
                 </div>
                 <div class="col-lg-6 mb-3">
                     <label class="form-label fw-bold">City</label>
                     <p class="form-control-plaintext">{{ $license->city ?? 'N/A' }}</p>
                 </div>
                 <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">County</label>
+                    <p class="form-control-plaintext">{{ $license->county ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">State</label>
+                    <p class="form-control-plaintext">{{ $license->state ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
                     <label class="form-label fw-bold">Zip Code</label>
                     <p class="form-control-plaintext">{{ $license->zip_code ?? 'N/A' }}</p>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Store Phone</label>
-                    <p class="form-control-plaintext">{{ $license->store_phone ?? 'N/A' }}</p>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Store Email</label>
-                    <p class="form-control-plaintext">{{ $license->store_email ?? 'N/A' }}</p>
                 </div>
             </div>
         </x-card>
@@ -201,32 +218,23 @@
                     <label class="form-label fw-bold">Permit Subtype</label>
                     <p class="form-control-plaintext">{{ ucfirst(str_replace('_', ' ', $license->permit_subtype ?? 'N/A')) }}</p>
                 </div>
-            </div>
-        </x-card>
-    </div>
-
-    <div class="my-2">
-        <x-card title="Jurisdiction" icon="bi bi-globe">
-            <div class="row">
                 <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Jurisdiction Country</label>
-                    <p class="form-control-plaintext">{{ $license->jurisdiction_country ?? 'N/A' }}</p>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Jurisdiction State</label>
-                    <p class="form-control-plaintext">{{ $license->jurisdiction_state ?? 'N/A' }}</p>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Jurisdiction City</label>
-                    <p class="form-control-plaintext">{{ $license->jurisdiction_city ?? 'N/A' }}</p>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Federal</label>
-                    <p class="form-control-plaintext">{{ $license->jurisdiction_federal ?? 'N/A' }}</p>
+                    <label class="form-label fw-bold">Jurisdiction Level</label>
+                    <p class="form-control-plaintext">
+                        @if($license->jurisdiction_level)
+                            <x-badge type="info">{{ ucfirst($license->jurisdiction_level) }}</x-badge>
+                        @else
+                            N/A
+                        @endif
+                    </p>
                 </div>
                 <div class="col-lg-6 mb-3">
                     <label class="form-label fw-bold">Agency Name</label>
                     <p class="form-control-plaintext">{{ $license->agency_name ?? 'N/A' }}</p>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <label class="form-label fw-bold">Permit Number</label>
+                    <p class="form-control-plaintext">{{ $license->permit_number ?? $license->submission_confirmation_number ?? 'N/A' }}</p>
                 </div>
             </div>
         </x-card>
@@ -280,8 +288,8 @@
                     </p>
                 </div>
                 <div class="col-lg-6 mb-3">
-                    <label class="form-label fw-bold">Submission Confirmation Number</label>
-                    <p class="form-control-plaintext">{{ $license->submission_confirmation_number ?? 'N/A' }}</p>
+                    <label class="form-label fw-bold">Permit Number</label>
+                    <p class="form-control-plaintext">{{ $license->permit_number ?? $license->submission_confirmation_number ?? 'N/A' }}</p>
                 </div>
                 <div class="col-lg-6 mb-3">
                     <label class="form-label fw-bold">
@@ -303,6 +311,60 @@
             </div>
         </x-card>
     </div>
+
+    <!-- License Document Card (Visible when document is uploaded) -->
+    @if($license->license_document || ($isAdminAgent && in_array($license->billing_status, ['paid', 'overridden'])))
+    <div class="my-2">
+        <x-card title="License Document" icon="bi bi-file-earmark-pdf">
+            @if($license->license_document)
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-success bg-opacity-10 rounded p-3">
+                                <i class="bi bi-file-earmark-check text-success" style="font-size: 2rem;"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ $license->license_document_name ?? 'License Document' }}</h6>
+                                <small class="text-muted">
+                                    Uploaded on {{ $license->license_document_uploaded_at ? $license->license_document_uploaded_at->format('M d, Y h:i A') : 'N/A' }}
+                                    @if($license->documentUploader)
+                                        by {{ $license->documentUploader->name }}
+                                    @endif
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ Storage::url($license->license_document) }}" 
+                           target="_blank" 
+                           class="btn btn-success">
+                            <i class="bi bi-download me-1"></i>Download
+                        </a>
+                        @if($isAdminAgent)
+                            <form action="{{ route('admin.licenses.delete-document', $license) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            @else
+                <div class="text-center py-4">
+                    <i class="bi bi-file-earmark-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-2 mb-0">No license document uploaded yet.</p>
+                    @if($isAdminAgent)
+                        <x-button type="button" variant="success" icon="bi bi-upload" class="mt-3" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
+                            Upload Document
+                        </x-button>
+                    @endif
+                </div>
+            @endif
+        </x-card>
+    </div>
+    @endif
 
     <div class="my-3 d-flex justify-content-end gap-2">
         <x-button href="{{ route('admin.licenses.index') }}" variant="primary" icon="bi bi-arrow-left">Back to List</x-button>
@@ -348,92 +410,54 @@
     }
 </script>
 
-<!-- Extend Expiration Modal -->
+<!-- Upload Document Modal -->
 @if($isAdminAgent && in_array($license->billing_status, ['paid', 'overridden']))
-<div class="modal fade" id="extendExpirationModal" tabindex="-1" aria-labelledby="extendExpirationModalLabel" aria-hidden="true">
+<div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('admin.licenses.extend-expiration', $license) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('admin.licenses.upload-document', $license) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title" id="extendExpirationModalLabel">
-                        <i class="bi bi-calendar-plus me-2"></i>Extend License Expiration
+                    <h5 class="modal-title" id="uploadDocumentModalLabel">
+                        <i class="bi bi-upload me-2"></i>Upload License Document
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>Current Expiration:</strong> 
-                        {{ $license->expiration_date ? $license->expiration_date->format('M d, Y') : 'Not set' }}
+                        Upload the official license document for this permit. The client will be able to view and download this document.
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="new_expiration_date" class="form-label fw-bold">New Expiration Date</label>
-                        <input type="date" 
-                               class="form-control" 
-                               id="new_expiration_date" 
-                               name="new_expiration_date" 
-                               min="{{ now()->addDay()->format('Y-m-d') }}"
-                               value="{{ $license->expiration_date ? $license->expiration_date->addYear()->format('Y-m-d') : now()->addYear()->format('Y-m-d') }}"
-                               required>
-                        <div class="form-text">Select the new expiration date for this license.</div>
-                    </div>
-
-                    <!-- Quick Select Buttons -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted">Quick Select:</label>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(6)">+6 Months</x-button>
-                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(12)">+1 Year</x-button>
-                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(24)">+2 Years</x-button>
-                            <x-button type="button" variant="outline-secondary" size="sm" onclick="setExpirationDate(36)">+3 Years</x-button>
+                    @if($license->license_document)
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> A document already exists. Uploading a new document will replace the current one.
+                        <div class="mt-2">
+                            <small><strong>Current file:</strong> {{ $license->license_document_name }}</small>
                         </div>
                     </div>
-
-                    <!-- Renewal Evidence File Upload -->
+                    @endif
+                    
                     <div class="mb-3">
-                        <label for="renewal_evidence_file" class="form-label fw-bold">
-                            <i class="bi bi-file-earmark-arrow-up me-1"></i>Renewal Evidence Document
+                        <label for="license_document" class="form-label fw-bold">
+                            <i class="bi bi-file-earmark-arrow-up me-1"></i>Select Document
                         </label>
                         <input type="file" 
                                class="form-control" 
-                               id="renewal_evidence_file" 
-                               name="renewal_evidence_file"
-                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                        <div class="form-text">Upload a copy of the renewal certificate or evidence document (PDF, JPG, PNG, DOC). This will be available for the client to view and download.</div>
+                               id="license_document" 
+                               name="license_document"
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                               required>
+                        <div class="form-text">Accepted formats: PDF, JPG, PNG, DOC, DOCX (Max: 10MB)</div>
                     </div>
-
-                    @if($license->renewal_evidence_file)
-                    <div class="alert alert-success d-flex align-items-center justify-content-between">
-                        <div>
-                            <i class="bi bi-file-earmark-check me-2"></i>
-                            <strong>Current Evidence File:</strong> 
-                            <span class="ms-1">{{ basename($license->renewal_evidence_file) }}</span>
-                        </div>
-                        <a href="{{ Storage::url($license->renewal_evidence_file) }}" target="_blank" class="btn btn-sm btn-outline-success" download>
-                            <i class="bi bi-download me-1"></i>Download
-                        </a>
-                    </div>
-                    @endif
                 </div>
                 <div class="modal-footer">
                     <x-button type="button" variant="secondary" data-bs-dismiss="modal">Cancel</x-button>
-                    <x-button type="submit" variant="warning" icon="bi bi-check-lg">Extend License</x-button>
+                    <x-button type="submit" variant="success" icon="bi bi-upload">Upload Document</x-button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-<script>
-    function setExpirationDate(months) {
-        const currentDate = new Date('{{ $license->expiration_date ? $license->expiration_date->format("Y-m-d") : now()->format("Y-m-d") }}');
-        const newDate = new Date(currentDate);
-        newDate.setMonth(newDate.getMonth() + months);
-        
-        const formattedDate = newDate.toISOString().split('T')[0];
-        document.getElementById('new_expiration_date').value = formattedDate;
-    }
-</script>
 @endif

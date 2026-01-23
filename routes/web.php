@@ -58,9 +58,12 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
     Route::resource('agency', AgencyController::class)->names('admin.agency');
     Route::post('licenses/{license}/refresh-status', [LicenseController::class, 'refreshStatus'])->name('admin.licenses.refresh-status');
     Route::post('licenses/bulk-refresh', [LicenseController::class, 'bulkRefreshStatus'])->name('admin.licenses.bulk-refresh');
-    Route::post('licenses/{license}/extend-expiration', [LicenseController::class, 'extendExpiration'])->name('admin.licenses.extend-expiration');
     Route::post('licenses/{license}/update-status', [LicenseController::class, 'updateStatus'])->name('admin.licenses.update-status');
     Route::patch('licenses/{license}/toggle-status', [LicenseController::class, 'toggleStatus'])->name('admin.licenses.toggle-status');
+    Route::post('licenses/{license}/upload-document', [LicenseController::class, 'uploadDocument'])->name('admin.licenses.upload-document');
+    Route::delete('licenses/{license}/delete-document', [LicenseController::class, 'deleteDocument'])->name('admin.licenses.delete-document');
+    Route::post('licenses/{license}/initiate-renewal', [LicenseController::class, 'initiateRenewal'])->name('admin.licenses.initiate-renewal');
+    Route::post('licenses/{license}/renewals/{renewal}/upload-file', [LicenseController::class, 'uploadRenewalFile'])->name('admin.licenses.upload-renewal-file');
     
     Route::prefix('licenses/{license}/requirements')->name('admin.licenses.requirements.')->group(function () {
         Route::get('/', [LicenseRequirementController::class, 'index'])->name('index');
@@ -78,7 +81,7 @@ Route::prefix('admin')->middleware('auth.user')->group(function() {
         Route::post('/', [LicensePaymentController::class, 'store'])->name('store');
         Route::post('/{payment}/add-item', [LicensePaymentController::class, 'addItem'])->name('add-item');
         Route::delete('/{payment}/items/{item}', [LicensePaymentController::class, 'removeItem'])->name('remove-item');
-        Route::post('/{payment}/checkout', [LicensePaymentController::class, 'checkout'])->name('checkout');
+        Route::match(['get', 'post'], '/{payment}/checkout', [LicensePaymentController::class, 'checkout'])->name('checkout');
         Route::get('/{payment}/success', [LicensePaymentController::class, 'success'])->name('success');
         Route::get('/{payment}/cancel', [LicensePaymentController::class, 'cancel'])->name('cancel');
         Route::post('/{payment}/pay-offline', [LicensePaymentController::class, 'payOffline'])->name('pay-offline');

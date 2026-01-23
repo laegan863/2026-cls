@@ -12,11 +12,13 @@ class License extends Model
     protected $fillable = [
         'transaction_id',
         'client_id',
+        'client_name',
         'email',
         'primary_contact_info',
         'legal_name',
         'dba',
         'fein',
+        'sales_tax_id',
         'store_name',
         'store_address',
         'store_city',
@@ -24,12 +26,17 @@ class License extends Model
         'store_zip_code',
         'store_phone',
         'store_email',
+        'street_number',
+        'street_name',
         'country',
         'state',
         'city',
+        'county',
         'zip_code',
         'permit_type',
         'permit_subtype',
+        'permit_number',
+        'jurisdiction_level',
         'jurisdiction_country',
         'jurisdiction_state',
         'jurisdiction_city',
@@ -41,6 +48,11 @@ class License extends Model
         'billing_status',
         'submission_confirmation_number',
         'renewal_evidence_file',
+        'renewal_file_pending',
+        'license_document',
+        'license_document_name',
+        'license_document_uploaded_at',
+        'license_document_uploaded_by',
         'status',
         'workflow_status',
         'is_active',
@@ -56,7 +68,9 @@ class License extends Model
         'renewal_window_open_date' => 'date',
         'validated_at' => 'datetime',
         'approved_at' => 'datetime',
+        'license_document_uploaded_at' => 'datetime',
         'is_active' => 'boolean',
+        'renewal_file_pending' => 'boolean',
     ];
 
     // Workflow status constants
@@ -90,6 +104,14 @@ class License extends Model
     }
 
     /**
+     * Get the permit type associated with this license.
+     */
+    public function permitType()
+    {
+        return $this->belongsTo(PermitType::class, 'permit_type', 'permit_type');
+    }
+
+    /**
      * Get the assigned agent from the latest payment.
      * Falls back to the payment creator if no assigned_agent_id is set.
      */
@@ -113,6 +135,11 @@ class License extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function documentUploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'license_document_uploaded_by');
+    }
+
     public function requirements(): HasMany
     {
         return $this->hasMany(LicenseRequirement::class);
@@ -121,6 +148,16 @@ class License extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(LicensePayment::class);
+    }
+
+    public function renewals(): HasMany
+    {
+        return $this->hasMany(LicenseRenewal::class);
+    }
+
+    public function pendingRenewal(): HasOne
+    {
+        return $this->hasOne(LicenseRenewal::class)->where('status', 'pending_file')->latest();
     }
 
     public function latestPayment(): HasOne
@@ -440,6 +477,11 @@ class License extends Model
     public function updateRenewalBillingStatus(): void
     {
         $updates = [];
+
+        // If expiration date exists but renewal window open date is not set, calculate it
+        if ($this->expiration_date && !$this->renewal_window_open_date) {
+            $updates['renewal_window_open_date'] = $this->expiration_date->copy()->subMonths(2);
+        }
 
         if (!$this->expiration_date) {
             // No expiration date set

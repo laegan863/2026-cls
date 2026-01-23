@@ -509,15 +509,26 @@
                                         @endif
                                     </td>
                                     <td class="py-3 text-center">
-                                        <x-button type="button" 
-                                                variant="light"
-                                                size="sm"
-                                                class="border rounded-circle p-2" 
-                                                style="width: 36px; height: 36px;"
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#paymentDetailModal{{ $historyPayment->id }}"
-                                                title="View Details"
-                                                icon="bi bi-eye text-primary"></x-button>
+                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                            @if($historyPayment->renewal && $historyPayment->renewal->status === 'pending_file')
+                                                <span class="badge bg-warning text-dark rounded-pill" title="Renewal file required">
+                                                    <i class="bi bi-upload"></i>
+                                                </span>
+                                            @elseif($historyPayment->renewal && $historyPayment->renewal->status === 'completed')
+                                                <span class="badge bg-success rounded-pill" title="Renewal completed">
+                                                    <i class="bi bi-check"></i>
+                                                </span>
+                                            @endif
+                                            <x-button type="button" 
+                                                    variant="light"
+                                                    size="sm"
+                                                    class="border rounded-circle p-2" 
+                                                    style="width: 36px; height: 36px;"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#paymentDetailModal{{ $historyPayment->id }}"
+                                                    title="View Details"
+                                                    icon="bi bi-eye text-primary"></x-button>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -622,6 +633,64 @@
                             <strong>Notes:</strong><br>
                             <pre class="bg-light p-2 rounded" style="white-space: pre-wrap;">{{ $historyPayment->notes }}</pre>
                         </div>
+                        @endif
+
+                        <!-- Renewal Document Section -->
+                        @php
+                            $paymentRenewal = $historyPayment->renewal;
+                        @endphp
+                        @if($paymentRenewal)
+                            <hr class="my-3">
+                            <div class="mt-3">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-arrow-repeat me-2"></i>Renewal #{{ $paymentRenewal->renewal_number }} Details
+                                </h6>
+                                
+                                @if($paymentRenewal->status === 'pending_file')
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>Renewal Document Required!</strong> 
+                                        Please upload the renewal evidence file to extend expiration to {{ $paymentRenewal->new_expiration_date->format('M d, Y') }}.
+                                    </div>
+                                    
+                                    @if($isAdminAgent)
+                                    <form action="{{ route('admin.licenses.upload-renewal-file', [$license, $paymentRenewal]) }}" method="POST" enctype="multipart/form-data">
+                                        @csrf
+                                        <div class="mb-3">
+                                            <label for="renewal_evidence_file_{{ $historyPayment->id }}" class="form-label fw-bold">
+                                                <i class="bi bi-file-earmark-arrow-up me-1"></i>Upload Renewal Evidence
+                                            </label>
+                                            <input type="file" 
+                                                   class="form-control" 
+                                                   id="renewal_evidence_file_{{ $historyPayment->id }}" 
+                                                   name="renewal_evidence_file"
+                                                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                   required>
+                                            <div class="form-text">Accepted: PDF, JPG, PNG, DOC, DOCX (Max: 10MB)</div>
+                                        </div>
+                                        <x-button type="submit" variant="warning" icon="bi bi-upload">Upload & Complete Renewal</x-button>
+                                    </form>
+                                    @endif
+                                @elseif($paymentRenewal->status === 'completed')
+                                    <div class="alert alert-success mb-0">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <i class="bi bi-check-circle me-2"></i>
+                                                <strong>Renewal Completed!</strong><br>
+                                                <small>
+                                                    Expiration extended to {{ $paymentRenewal->new_expiration_date->format('M d, Y') }}<br>
+                                                    Uploaded by {{ $paymentRenewal->uploadedBy->name ?? 'N/A' }} on {{ $paymentRenewal->file_uploaded_at ? $paymentRenewal->file_uploaded_at->format('M d, Y h:i A') : 'N/A' }}
+                                                </small>
+                                            </div>
+                                            @if($paymentRenewal->renewal_evidence_file)
+                                                <a href="{{ Storage::url($paymentRenewal->renewal_evidence_file) }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-download me-1"></i>View Document
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
                         @endif
                     </div>
                     <div class="modal-footer">

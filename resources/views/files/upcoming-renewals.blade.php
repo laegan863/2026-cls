@@ -115,18 +115,22 @@
                                 <x-badge type="{{ $renewal->renewal_status_badge ?? 'secondary' }}">{{ $renewal->renewal_status_label ?? 'Closed' }}</x-badge>
                             </td>
                             <td>
-                                <x-dropdown align="end">
-                                    <x-slot:trigger>
-                                        <x-icon-button icon="fas fa-ellipsis-v" variant="light" size="sm" />
-                                    </x-slot:trigger>
+                                <div class="d-flex gap-1">
                                     @if(Auth::user()->hasPermission('view'))
-                                    <x-dropdown-item href="{{ route('admin.licenses.show', $renewal) }}" icon="fas fa-eye">View Details</x-dropdown-item>
+                                    <x-icon-button href="{{ route('admin.licenses.show', $renewal) }}" icon="fas fa-eye" variant="primary" size="sm" title="View Details" />
                                     @endif
 
-                                    @if(Auth::user()->hasPermission('edit'))
-                                    <x-dropdown-item href="{{ route('admin.licenses.edit', $renewal) }}" icon="fas fa-edit">Edit</x-dropdown-item>
+                                    @if($renewal->renewal_status === 'open' || $renewal->renewal_status === 'expired')
+                                        @if(!$renewal->activePayment)
+                                            <form action="{{ route('admin.licenses.initiate-renewal', $renewal) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <x-icon-button type="submit" icon="fas fa-sync-alt" variant="success" size="sm" title="Renew License" />
+                                            </form>
+                                        @else
+                                            <x-icon-button href="{{ route('admin.licenses.payments.show', $renewal) }}" icon="fas fa-credit-card" variant="warning" size="sm" title="View Payment" />
+                                        @endif
                                     @endif
-                                </x-dropdown>
+                                </div>
                             </td>
                         </tr>
                     @empty

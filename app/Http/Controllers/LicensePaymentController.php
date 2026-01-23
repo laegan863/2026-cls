@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\License;
 use App\Models\LicensePayment;
 use App\Models\LicensePaymentItem;
+use App\Models\LicenseRenewal;
 use App\Models\User;
+use App\Notifications\LicenseCreatedNotification;
 use App\Notifications\PaymentCreatedNotification;
 use App\Notifications\PaymentCompletedNotification;
 use Illuminate\Http\Request;
@@ -195,6 +197,25 @@ class LicensePaymentController extends Controller
             ];
         }
 
+        // If no items, create a single line item with total amount
+        if (empty($lineItems) && $payment->total_amount > 0) {
+            $lineItems[] = [
+                'price_data' => [
+                    'currency' => 'usd',
+                    'product_data' => [
+                        'name' => 'License/Permit Fee',
+                        'description' => 'License renewal fee for ' . ($license->permit_type ?? 'License'),
+                    ],
+                    'unit_amount' => (int)($payment->total_amount * 100),
+                ],
+                'quantity' => 1,
+            ];
+        }
+
+        if (empty($lineItems)) {
+            return back()->with('error', 'No payment items found. Please contact support.');
+        }
+
         // Create Stripe checkout session
         $session = StripeSession::create([
             'payment_method_types' => ['card'],
@@ -241,6 +262,25 @@ class LicensePaymentController extends Controller
             // Update license billing status to paid
             $license->markBillingPaid();
 
+            // Determine if this is a new enrollment or renewal
+            // New enrollment = no previous PAID payments for this license
+            $previousPaidPayments = $license->payments()
+                ->where('id', '!=', $payment->id)
+                ->whereIn('status', ['paid', 'overridden'])
+                ->count();
+            
+            $isNewEnrollment = $previousPaidPayments === 0;
+            
+            if ($isNewEnrollment) {
+                // New enrollment - set initial expiration date directly
+                $this->setInitialExpirationDate($license);
+                $successMessage = 'Payment completed successfully! License has been activated.';
+            } else {
+                // Renewal - create renewal record and wait for file upload
+                $this->createRenewalRecord($license, $payment);
+                $successMessage = 'Payment completed successfully! Please upload the renewal evidence file to complete the renewal process.';
+            }
+
             // Notify client
             $license->client->notify(new PaymentCompletedNotification($license, $payment));
 
@@ -249,7 +289,7 @@ class LicensePaymentController extends Controller
 
             return redirect()
                 ->route('admin.licenses.show', $license)
-                ->with('success', 'Payment completed successfully!');
+                ->with('success', $successMessage);
         }
 
         return redirect()
@@ -314,6 +354,25 @@ class LicensePaymentController extends Controller
         // Update license billing status to paid
         $license->markBillingPaid();
 
+        // Determine if this is a new enrollment or renewal
+        // New enrollment = no previous PAID payments for this license
+        $previousPaidPayments = $license->payments()
+            ->where('id', '!=', $payment->id)
+            ->whereIn('status', ['paid', 'overridden'])
+            ->count();
+        
+        $isNewEnrollment = $previousPaidPayments === 0;
+        
+        if ($isNewEnrollment) {
+            // New enrollment - set initial expiration date directly
+            $this->setInitialExpirationDate($license);
+            $successMessage = 'Payment completed! Change: $' . number_format($change, 2) . '. License has been activated.';
+        } else {
+            // Renewal - create renewal record and wait for file upload
+            $this->createRenewalRecord($license, $payment);
+            $successMessage = 'Payment completed! Change: $' . number_format($change, 2) . '. Please upload the renewal evidence file.';
+        }
+
         // Notify client
         $license->client->notify(new PaymentCompletedNotification($license, $payment));
 
@@ -322,7 +381,7 @@ class LicensePaymentController extends Controller
 
         return redirect()
             ->route('admin.licenses.show', $license)
-            ->with('success', 'Payment completed! Change: $' . number_format($change, 2));
+            ->with('success', $successMessage);
     }
 
     /**
@@ -341,6 +400,25 @@ class LicensePaymentController extends Controller
         // Update license billing status to overridden
         $license->markBillingOverridden();
 
+        // Determine if this is a new enrollment or renewal
+        // New enrollment = no previous PAID payments for this license
+        $previousPaidPayments = $license->payments()
+            ->where('id', '!=', $payment->id)
+            ->whereIn('status', ['paid', 'overridden'])
+            ->count();
+        
+        $isNewEnrollment = $previousPaidPayments === 0;
+        
+        if ($isNewEnrollment) {
+            // New enrollment - set initial expiration date directly
+            $this->setInitialExpirationDate($license);
+            $successMessage = 'Payment overridden successfully. License has been activated.';
+        } else {
+            // Renewal - create renewal record and wait for file upload
+            $this->createRenewalRecord($license, $payment);
+            $successMessage = 'Payment overridden successfully. Please upload the renewal evidence file.';
+        }
+
         // Notify client
         $license->client->notify(new PaymentCompletedNotification($license, $payment));
 
@@ -349,7 +427,7 @@ class LicensePaymentController extends Controller
 
         return redirect()
             ->route('admin.licenses.show', $license)
-            ->with('success', 'Payment overridden successfully.');
+            ->with('success', $successMessage);
     }
 
     /**
@@ -406,5 +484,97 @@ class LicensePaymentController extends Controller
         foreach ($staffUsers as $user) {
             $user->notify(new PaymentCompletedNotification($license, $payment));
         }
+    }
+
+    /**
+     * Extend license expiration date based on permit type renewal cycle
+     */
+    private function extendExpirationDate(License $license): void
+    {
+        $permitType = $license->permitType;
+        
+        if (!$permitType || !$permitType->has_renewal || !$permitType->renewal_cycle_months) {
+            return;
+        }
+
+        $renewalMonths = $permitType->renewal_cycle_months;
+        
+        // If license has existing expiration date, extend from that date
+        // Otherwise, extend from today
+        $baseDate = $license->expiration_date && $license->expiration_date->isFuture() 
+            ? $license->expiration_date 
+            : now();
+        
+        $newExpirationDate = $baseDate->copy()->addMonths($renewalMonths);
+        
+        // Calculate renewal window open date as 2 months before expiration
+        $renewalWindowOpenDate = $newExpirationDate->copy()->subMonths(2);
+        
+        $license->update([
+            'expiration_date' => $newExpirationDate,
+            'renewal_window_open_date' => $renewalWindowOpenDate,
+            'renewal_status' => 'closed', // Reset renewal status for new period
+        ]);
+    }
+
+    /**
+     * Set initial expiration date for new enrollments (first-time license creation)
+     */
+    private function setInitialExpirationDate(License $license): void
+    {
+        $permitType = $license->permitType;
+        
+        if (!$permitType || !$permitType->has_renewal || !$permitType->renewal_cycle_months) {
+            return;
+        }
+
+        $renewalMonths = $permitType->renewal_cycle_months;
+        
+        // For new enrollments, start from today
+        $newExpirationDate = now()->addMonths($renewalMonths);
+        
+        // Calculate renewal window open date as 2 months before expiration
+        $renewalWindowOpenDate = $newExpirationDate->copy()->subMonths(2);
+        
+        $license->update([
+            'expiration_date' => $newExpirationDate,
+            'renewal_window_open_date' => $renewalWindowOpenDate,
+            'renewal_status' => 'closed',
+        ]);
+
+        // Notify client about license activation
+        $license->client->notify(new LicenseCreatedNotification($license));
+    }
+
+    /**
+     * Create a renewal record when a renewal payment is completed
+     */
+    private function createRenewalRecord(License $license, LicensePayment $payment): void
+    {
+        $permitType = $license->permitType;
+        
+        // Count existing renewals to determine renewal number
+        $renewalNumber = $license->renewals()->count() + 1;
+        
+        // Calculate what the new expiration date will be after file is uploaded
+        $renewalMonths = $permitType && $permitType->renewal_cycle_months 
+            ? $permitType->renewal_cycle_months 
+            : 12;
+        
+        $baseDate = $license->expiration_date && $license->expiration_date->isFuture() 
+            ? $license->expiration_date 
+            : now();
+        
+        $newExpirationDate = $baseDate->copy()->addMonths($renewalMonths);
+        
+        // Create the renewal record
+        LicenseRenewal::create([
+            'license_id' => $license->id,
+            'payment_id' => $payment->id,
+            'renewal_number' => $renewalNumber,
+            'previous_expiration_date' => $license->expiration_date,
+            'new_expiration_date' => $newExpirationDate,
+            'status' => LicenseRenewal::STATUS_PENDING_FILE,
+        ]);
     }
 }

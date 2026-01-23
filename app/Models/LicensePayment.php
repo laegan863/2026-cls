@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class LicensePayment extends Model
@@ -81,6 +82,11 @@ class LicensePayment extends Model
     public function items(): HasMany
     {
         return $this->hasMany(LicensePaymentItem::class)->orderBy('sort_order');
+    }
+
+    public function renewal(): HasOne
+    {
+        return $this->hasOne(LicenseRenewal::class, 'payment_id');
     }
 
     // Helper methods

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\License;
+use App\Models\LicenseRenewal;
 use App\Models\User;
 use App\Models\LicenseRequirement;
 use App\Notifications\LicenseCreatedNotification;
@@ -147,35 +148,26 @@ class LicenseController extends Controller
         $role = $user->Role->name;
         
         $validated = $request->validate([
+            'client_id' => 'required|exists:users,id',
+            'client_name' => 'nullable|string',
             'email' => 'nullable|email',
             'primary_contact_info' => 'nullable|string',
             'legal_name' => 'nullable|string',
             'dba' => 'nullable|string',
-            'fein' => 'nullable|string',
-            'store_name' => 'nullable|string',
-            'store_address' => 'nullable|string',
-            'store_city' => 'nullable|string',
-            'store_state' => 'nullable|string',
-            'store_zip_code' => 'nullable|string',
-            'store_phone' => 'nullable|string',
-            'store_email' => 'nullable|email',
-            'country' => 'nullable|string',
-            'state' => 'nullable|string',
+            'fein' => 'nullable|string|max:9',
+            'sales_tax_id' => 'nullable|string',
+            'street_number' => 'nullable|string',
+            'street_name' => 'nullable|string',
             'city' => 'nullable|string',
+            'county' => 'nullable|string',
+            'state' => 'nullable|string',
             'zip_code' => 'nullable|string',
-            'permit_type' => 'nullable|string',
+            'permit_type' => 'required|string',
             'permit_subtype' => 'nullable|string',
-            'jurisdiction_country' => 'nullable|string',
-            'jurisdiction_state' => 'nullable|string',
-            'jurisdiction_city' => 'nullable|string',
-            'jurisdiction_federal' => 'nullable|string',
+            'jurisdiction_level' => 'nullable|string',
             'agency_name' => 'nullable|string',
-            'expiration_date' => 'nullable|date',
-            'renewal_window_open_date' => 'nullable|date',
-            'assigned_agent' => 'nullable|string',
-            'renewal_status' => 'nullable|string',
-            'billing_status' => 'nullable|string',
-            'submission_confirmation_number' => 'nullable|string',
+            'permit_number' => 'nullable|string',
+            'payment_action' => 'nullable|in:stripe,override',
             // Requirements validation
             'requirements' => 'nullable|array',
             'requirements.*.label' => 'nullable|string|max:255',
@@ -184,16 +176,42 @@ class LicenseController extends Controller
             'requirement_files.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,gif|max:10240',
         ]);
 
+        // Get client name
         if ($role === 'Admin') {
-            $validated['client_id'] = $request->input('client_id');
+            $client = User::find($request->input('client_id'));
+            $validated['client_name'] = $client ? $client->name : null;
         } else {
             $validated['client_id'] = Auth::id();
+            $validated['client_name'] = Auth::user()->name;
         }
 
-        unset($validated['assigned_agent']);
-        // Remove requirements from validated data (they go to separate table)
+        // Build store address from components
+        $storeAddress = trim(($request->street_number ?? '') . ' ' . ($request->street_name ?? ''));
+        $validated['store_name'] = $validated['legal_name'] ?? null;
+        $validated['store_address'] = $storeAddress;
+        $validated['store_city'] = $validated['city'] ?? null;
+        $validated['store_state'] = $validated['state'] ?? null;
+        $validated['store_zip_code'] = $validated['zip_code'] ?? null;
+        
+        // Note: expiration_date is NOT set here for new enrollments
+        // It will be set after payment is completed in LicensePaymentController
+
+        // Generate permit number if not provided
+        if (empty($validated['permit_number'])) {
+            $validated['permit_number'] = 'PN-' . strtoupper(Str::random(8));
+        }
+        $validated['submission_confirmation_number'] = $validated['permit_number'];
+
+        $paymentAction = $request->input('payment_action', 'stripe');
+
+        // Remove fields that don't go in licenses table
         unset($validated['requirements']);
         unset($validated['requirement_files']);
+        unset($validated['payment_action']);
+        unset($validated['street_number']);
+        unset($validated['street_name']);
+        unset($validated['county']);
+        unset($validated['sales_tax_id']);
         
         $validated['transaction_id'] = Str::random(12);
         $license = License::create($validated);
@@ -242,7 +260,145 @@ class LicenseController extends Controller
         // Send notification to admins and assigned agent about new license
         $this->notifyLicenseCreated($license);
 
-        return redirect()->route('admin.licenses.index')->with('success', 'License created successfully!');
+        // Handle payment action
+        if ($paymentAction === 'override' && $role === 'Admin') {
+            // Admin overrides payment - mark as paid
+            $license->billing_status = 'paid';
+            $license->save();
+            
+            // Create a payment record with override status
+            $totalAmount = $this->calculatePermitFees($permitType);
+            
+            if ($totalAmount > 0) {
+                $payment = \App\Models\LicensePayment::create([
+                    'license_id' => $license->id,
+                    'created_by' => Auth::id(),
+                    'assigned_agent_id' => Auth::id(),
+                    'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
+                    'total_amount' => $totalAmount,
+                    'status' => 'overridden',
+                    'payment_method' => 'override',
+                    'paid_at' => now(),
+                    'notes' => 'Payment overridden by Admin',
+                ]);
+                
+                // Add payment items from permit type fees
+                $this->addPermitFeesToPayment($payment, $permitType);
+            }
+            
+            // Extend expiration date based on permit type renewal cycle
+            $this->extendExpirationDate($license, $permitType);
+            
+            return redirect()->route('admin.licenses.show', $license)->with('success', 'License created and marked as paid!');
+        } else {
+            // Create payment record and redirect to payment page
+            $totalAmount = $this->calculatePermitFees($permitType);
+            
+            if ($totalAmount > 0) {
+                $payment = \App\Models\LicensePayment::create([
+                    'license_id' => $license->id,
+                    'created_by' => Auth::id(),
+                    'assigned_agent_id' => null,
+                    'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
+                    'total_amount' => $totalAmount,
+                    'status' => 'open',
+                ]);
+                
+                // Add payment items from permit type fees
+                $this->addPermitFeesToPayment($payment, $permitType);
+                
+                // Redirect to Stripe checkout
+                return redirect()->route('admin.licenses.payments.checkout', [$license, $payment]);
+            }
+            
+            return redirect()->route('admin.licenses.show', $license)->with('success', 'License created successfully!');
+        }
+    }
+
+    /**
+     * Calculate total fees from permit type
+     */
+    private function calculatePermitFees($permitType)
+    {
+        if (!$permitType) return 0;
+        
+        return ($permitType->government_fee ?? 0) +
+               ($permitType->cls_service_fee ?? 0) +
+               ($permitType->city_county_fee ?? 0) +
+               ($permitType->additional_fee ?? 0);
+    }
+
+    /**
+     * Add permit type fees as payment items
+     */
+    private function addPermitFeesToPayment($payment, $permitType)
+    {
+        if (!$permitType) return;
+        
+        if ($permitType->government_fee > 0) {
+            \App\Models\LicensePaymentItem::create([
+                'license_payment_id' => $payment->id,
+                'label' => 'Government Fee',
+                'description' => 'Government processing fee',
+                'amount' => $permitType->government_fee,
+            ]);
+        }
+        
+        if ($permitType->cls_service_fee > 0) {
+            \App\Models\LicensePaymentItem::create([
+                'license_payment_id' => $payment->id,
+                'label' => 'CLS-360 Service Fee',
+                'description' => 'CLS-360 service and processing fee',
+                'amount' => $permitType->cls_service_fee,
+            ]);
+        }
+        
+        if ($permitType->city_county_fee > 0) {
+            \App\Models\LicensePaymentItem::create([
+                'license_payment_id' => $payment->id,
+                'label' => 'City/County Fee',
+                'description' => 'Local jurisdiction fee',
+                'amount' => $permitType->city_county_fee,
+            ]);
+        }
+        
+        if ($permitType->additional_fee > 0) {
+            \App\Models\LicensePaymentItem::create([
+                'license_payment_id' => $payment->id,
+                'label' => 'Additional Fee',
+                'description' => $permitType->additional_fee_description ?? 'Additional processing fee',
+                'amount' => $permitType->additional_fee,
+            ]);
+        }
+    }
+
+    /**
+     * Extend license expiration date based on permit type renewal cycle
+     */
+    private function extendExpirationDate($license, $permitType)
+    {
+        if (!$permitType || !$permitType->has_renewal || !$permitType->renewal_cycle_months) {
+            return;
+        }
+
+        $renewalMonths = $permitType->renewal_cycle_months;
+        
+        // If license has existing expiration date in the future, extend from that date
+        // Otherwise, extend from today
+        $baseDate = $license->expiration_date && $license->expiration_date->isFuture() 
+            ? $license->expiration_date 
+            : now();
+        
+        $newExpirationDate = $baseDate->copy()->addMonths($renewalMonths);
+        
+        // Calculate renewal window open date as 2 months before expiration
+        $renewalWindowOpenDate = $newExpirationDate->copy()->subMonths(2);
+        
+        $license->update([
+            'expiration_date' => $newExpirationDate,
+            'renewal_window_open_date' => $renewalWindowOpenDate,
+            'renewal_status' => 'closed', // Reset renewal status for new period
+        ]);
     }
 
     public function show(License $license)
@@ -343,6 +499,191 @@ class LicenseController extends Controller
         $license->delete();
 
         return redirect()->route('admin.licenses.index')->with('success', 'License deleted successfully!');
+    }
+
+    /**
+     * Upload license document (Admin/Agent only)
+     */
+    public function uploadDocument(Request $request, License $license)
+    {
+        $user = Auth::user();
+        $role = $user->Role->name;
+        
+        // Only Admin/Agent can upload documents
+        if (!in_array($role, ['Admin', 'Agent'])) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        // Only allow upload when billing is paid or overridden
+        if (!in_array($license->billing_status, ['paid', 'overridden'])) {
+            return back()->with('error', 'Cannot upload document. Payment must be completed first.');
+        }
+        
+        $validated = $request->validate([
+            'license_document' => 'required|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240', // 10MB max
+        ]);
+        
+        // Delete old document if exists
+        if ($license->license_document) {
+            Storage::disk('public')->delete($license->license_document);
+        }
+        
+        // Store the new document
+        $file = $request->file('license_document');
+        $originalName = $file->getClientOriginalName();
+        $path = $file->store('license-documents/' . $license->id, 'public');
+        
+        $license->update([
+            'license_document' => $path,
+            'license_document_name' => $originalName,
+            'license_document_uploaded_at' => now(),
+            'license_document_uploaded_by' => Auth::id(),
+        ]);
+        
+        return back()->with('success', 'License document uploaded successfully! The client can now view and download it.');
+    }
+
+    /**
+     * Delete license document (Admin/Agent only)
+     */
+    public function deleteDocument(License $license)
+    {
+        $user = Auth::user();
+        $role = $user->Role->name;
+        
+        // Only Admin/Agent can delete documents
+        if (!in_array($role, ['Admin', 'Agent'])) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        if ($license->license_document) {
+            Storage::disk('public')->delete($license->license_document);
+            
+            $license->update([
+                'license_document' => null,
+                'license_document_name' => null,
+                'license_document_uploaded_at' => null,
+                'license_document_uploaded_by' => null,
+            ]);
+        }
+        
+        return back()->with('success', 'License document deleted successfully.');
+    }
+
+    /**
+     * Upload renewal evidence file and complete the renewal process
+     */
+    public function uploadRenewalFile(Request $request, License $license, LicenseRenewal $renewal)
+    {
+        $user = Auth::user();
+        $role = $user->Role->name;
+        
+        // Only Admin/Agent can upload renewal files
+        if (!in_array($role, ['Admin', 'Agent'])) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        // Verify the renewal belongs to this license
+        if ($renewal->license_id !== $license->id) {
+            abort(404, 'Renewal not found for this license.');
+        }
+        
+        // Check if renewal is pending file
+        if ($renewal->status !== 'pending_file') {
+            return back()->with('error', 'This renewal is not pending file upload.');
+        }
+        
+        $validated = $request->validate([
+            'renewal_evidence_file' => 'required|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
+        ]);
+        
+        // Delete old file if exists
+        if ($renewal->renewal_evidence_file) {
+            Storage::disk('public')->delete($renewal->renewal_evidence_file);
+        }
+        
+        // Store the new file
+        $file = $request->file('renewal_evidence_file');
+        $path = $file->store('renewal-evidence/' . $license->id, 'public');
+        
+        // Update renewal record with file info
+        $renewal->update([
+            'renewal_evidence_file' => $path,
+            'file_uploaded_at' => now(),
+            'file_uploaded_by' => $user->id,
+            'status' => 'completed',
+        ]);
+        
+        // Now extend the expiration date
+        $newExpirationDate = $renewal->new_expiration_date;
+        $renewalWindowOpenDate = $newExpirationDate->copy()->subMonths(2);
+        
+        $license->update([
+            'expiration_date' => $newExpirationDate,
+            'renewal_window_open_date' => $renewalWindowOpenDate,
+            'renewal_status' => 'closed',
+        ]);
+        
+        // Send renewal notification to client
+        $license->client->notify(new LicenseRenewedNotification(
+            $license, 
+            $newExpirationDate->format('M d, Y'),
+            $path
+        ));
+        
+        return back()->with('success', 'Renewal #' . $renewal->renewal_number . ' completed! License expiration extended to ' . $newExpirationDate->format('M d, Y') . '. Client has been notified.');
+    }
+
+    /**
+     * Initiate renewal payment for a license
+     */
+    public function initiateRenewal(License $license)
+    {
+        $user = Auth::user();
+        $role = $user->Role->name;
+        
+        // Check if renewal is open or expired
+        if (!in_array($license->renewal_status, ['open', 'expired'])) {
+            return back()->with('error', 'Renewal is not available for this license.');
+        }
+        
+        // Check if there's already an active payment
+        if ($license->activePayment) {
+            return redirect()->route('admin.licenses.payments.show', $license)
+                ->with('info', 'A payment already exists for this license.');
+        }
+        
+        // Get permit type for fees
+        $permitType = $license->permitType;
+        if (!$permitType) {
+            return back()->with('error', 'No permit type found for this license.');
+        }
+        
+        // Calculate total fees
+        $totalAmount = $this->calculatePermitFees($permitType);
+        
+        if ($totalAmount <= 0) {
+            return back()->with('error', 'No fees configured for this permit type.');
+        }
+        
+        // Create payment record
+        $payment = \App\Models\LicensePayment::create([
+            'license_id' => $license->id,
+            'created_by' => Auth::id(),
+            'assigned_agent_id' => $role === 'Client' ? null : Auth::id(),
+            'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
+            'total_amount' => $totalAmount,
+            'status' => 'open',
+        ]);
+        
+        // Add payment items from permit type fees
+        $this->addPermitFeesToPayment($payment, $permitType);
+        
+        // Update billing status
+        $license->markBillingInvoiced();
+        
+        // Redirect to checkout
+        return redirect()->route('admin.licenses.payments.checkout', [$license, $payment]);
     }
 
     /**
