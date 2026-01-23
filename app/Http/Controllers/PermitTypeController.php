@@ -32,6 +32,20 @@ class PermitTypeController extends Controller
     {
         $validated = $request->validate([
             'permit_type' => 'required|string|max:255',
+            'short_name' => 'nullable|string|max:255',
+            'description' => 'required|string',
+            'jurisdiction_level' => 'nullable|in:city,county,state,federal',
+            'agency_name' => 'nullable|string|max:255',
+            'expiration_date' => 'nullable|date',
+            'has_renewal' => 'boolean',
+            'renewal_cycle_months' => 'nullable|integer|min:1',
+            'reminder_days' => 'nullable|array',
+            'reminder_days.*' => 'integer|in:15,30,60',
+            'government_fee' => 'nullable|numeric|min:0',
+            'cls_service_fee' => 'nullable|numeric|min:0',
+            'city_county_fee' => 'nullable|numeric|min:0',
+            'additional_fee' => 'nullable|numeric|min:0',
+            'additional_fee_description' => 'nullable|string|max:255',
             'is_active' => 'boolean',
             'sub_permits' => 'nullable|array',
             'sub_permits.*.name' => 'required|string|max:255',
@@ -40,6 +54,19 @@ class PermitTypeController extends Controller
 
         $permitType = PermitType::create([
             'permit_type' => $validated['permit_type'],
+            'short_name' => $validated['short_name'] ?? null,
+            'description' => $validated['description'],
+            'jurisdiction_level' => $validated['jurisdiction_level'] ?? null,
+            'agency_name' => $validated['agency_name'] ?? null,
+            'expiration_date' => $validated['expiration_date'] ?? null,
+            'has_renewal' => $request->has('has_renewal'),
+            'renewal_cycle_months' => $validated['renewal_cycle_months'] ?? null,
+            'reminder_days' => $request->reminder_days ?? null,
+            'government_fee' => $validated['government_fee'] ?? null,
+            'cls_service_fee' => $validated['cls_service_fee'] ?? null,
+            'city_county_fee' => $validated['city_county_fee'] ?? null,
+            'additional_fee' => $validated['additional_fee'] ?? null,
+            'additional_fee_description' => $validated['additional_fee_description'] ?? null,
             'is_active' => $request->has('is_active'),
         ]);
 
@@ -84,6 +111,20 @@ class PermitTypeController extends Controller
     {
         $validated = $request->validate([
             'permit_type' => 'required|string|max:255',
+            'short_name' => 'nullable|string|max:255',
+            'description' => 'required|string',
+            'jurisdiction_level' => 'nullable|in:city,county,state,federal',
+            'agency_name' => 'nullable|string|max:255',
+            'expiration_date' => 'nullable|date',
+            'has_renewal' => 'boolean',
+            'renewal_cycle_months' => 'nullable|integer|min:1',
+            'reminder_days' => 'nullable|array',
+            'reminder_days.*' => 'integer|in:15,30,60',
+            'government_fee' => 'nullable|numeric|min:0',
+            'cls_service_fee' => 'nullable|numeric|min:0',
+            'city_county_fee' => 'nullable|numeric|min:0',
+            'additional_fee' => 'nullable|numeric|min:0',
+            'additional_fee_description' => 'nullable|string|max:255',
             'is_active' => 'boolean',
             'sub_permits' => 'nullable|array',
             'sub_permits.*.id' => 'nullable|integer',
@@ -93,6 +134,19 @@ class PermitTypeController extends Controller
 
         $permitType->update([
             'permit_type' => $validated['permit_type'],
+            'short_name' => $validated['short_name'] ?? null,
+            'description' => $validated['description'],
+            'jurisdiction_level' => $validated['jurisdiction_level'] ?? null,
+            'agency_name' => $validated['agency_name'] ?? null,
+            'expiration_date' => $validated['expiration_date'] ?? null,
+            'has_renewal' => $request->has('has_renewal'),
+            'renewal_cycle_months' => $validated['renewal_cycle_months'] ?? null,
+            'reminder_days' => $request->reminder_days ?? null,
+            'government_fee' => $validated['government_fee'] ?? null,
+            'cls_service_fee' => $validated['cls_service_fee'] ?? null,
+            'city_county_fee' => $validated['city_county_fee'] ?? null,
+            'additional_fee' => $validated['additional_fee'] ?? null,
+            'additional_fee_description' => $validated['additional_fee_description'] ?? null,
             'is_active' => $request->has('is_active'),
         ]);
 

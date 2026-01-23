@@ -11,11 +11,32 @@ class PermitType extends Model
 
     protected $fillable = [
         'permit_type',
+        'short_name',
+        'description',
+        'jurisdiction_level',
+        'agency_name',
+        'expiration_date',
+        'has_renewal',
+        'renewal_cycle_months',
+        'reminder_days',
+        'government_fee',
+        'cls_service_fee',
+        'city_county_fee',
+        'additional_fee',
+        'additional_fee_description',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'has_renewal' => 'boolean',
+        'renewal_cycle_months' => 'integer',
+        'reminder_days' => 'array',
+        'government_fee' => 'decimal:2',
+        'cls_service_fee' => 'decimal:2',
+        'city_county_fee' => 'decimal:2',
+        'additional_fee' => 'decimal:2',
+        'expiration_date' => 'date',
     ];
 
     /**
